@@ -1,0 +1,355 @@
+.l07 {
+  position: absolute;
+  inset: 0;
+  outline: none;
+}
+
+/* ---------- mode line ---------- */
+.l07-mode {
+  position: absolute;
+  z-index: 5;
+  top: 12px;
+  right: 12px;
+  left: 290px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 12px 7px 8px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+  backdrop-filter: blur(6px);
+  box-shadow: var(--shadow-1);
+  font-size: 12.5px;
+  color: var(--ink-2);
+  transition: border-color 0.2s, background 0.2s;
+}
+.l07-mode__tag {
+  flex: none;
+  padding: 3px 7px;
+  border-radius: 6px;
+  background: var(--ink);
+  color: var(--paper);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+}
+.l07-mode__text {
+  line-height: 1.35;
+}
+.l07-mode.is-drawing {
+  border-color: color-mix(in srgb, var(--accent) 50%, var(--line));
+}
+.l07-mode.is-drawing .l07-mode__tag {
+  background: var(--accent);
+  color: #fff;
+}
+.l07-mode.is-clean {
+  border-color: color-mix(in srgb, var(--good) 50%, var(--line));
+  background: color-mix(in srgb, var(--good-soft) 80%, var(--card));
+}
+.l07-mode.is-clean .l07-mode__tag {
+  background: var(--good);
+  color: #fff;
+}
+
+/* ---------- netlist rows ---------- */
+.l07-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.l07-row {
+  --c: var(--ink-3);
+  display: grid;
+  grid-template-columns: 20px 44px 1fr 30px;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 5px;
+  border-radius: 7px;
+  text-align: left;
+  transition: background 0.15s;
+}
+.l07-row:hover {
+  background: var(--paper-2);
+}
+.l07-row.is-focus {
+  background: color-mix(in srgb, var(--c) 14%, var(--card));
+}
+.l07-row__st {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 1.5px solid var(--line-2);
+  color: var(--ink-3);
+  transition: all 0.25s var(--ease);
+}
+.l07-row.is-partial .l07-row__st {
+  border-color: var(--c);
+}
+.l07-row.is-done .l07-row__st {
+  background: var(--good);
+  border-color: var(--good);
+  color: #fff;
+  animation: l07-pop 0.4s var(--ease-spring);
+}
+.l07-row.is-short .l07-row__st {
+  background: var(--bad);
+  border-color: var(--bad);
+  color: #fff;
+}
+.l07-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--c);
+  opacity: 0.8;
+}
+.l07-row__name {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+.l07-row__meter {
+  height: 5px;
+  border-radius: 3px;
+  background: var(--paper-3);
+  overflow: hidden;
+}
+.l07-row__meter span {
+  display: block;
+  height: 100%;
+  background: var(--c);
+  border-radius: 3px;
+  transition: width 0.4s var(--ease);
+}
+.l07-row.is-done .l07-row__meter span {
+  background: var(--good);
+}
+.l07-row__short {
+  font-size: 10px;
+  color: var(--bad);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.l07-row__n {
+  font-size: 10.5px;
+  color: var(--ink-3);
+  text-align: right;
+}
+.l07-hint {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--ink-2);
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--info-soft);
+  border: 1px solid color-mix(in srgb, var(--info) 25%, transparent);
+  animation: fade-up 0.25s var(--ease) both;
+}
+.l07-hint--float {
+  position: absolute;
+  z-index: 6;
+  left: 10px;
+  right: 10px;
+  bottom: 64px;
+  box-shadow: var(--shadow-2);
+  background: color-mix(in srgb, var(--info-soft) 92%, var(--card));
+}
+.l07-actions {
+  display: flex;
+  gap: 6px;
+}
+.l07-actions .btn {
+  flex: 1;
+}
+
+/* ---------- compact strip ---------- */
+.l07-strip {
+  position: absolute;
+  z-index: 5;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.l07--compact .l07-mode {
+  top: 40px;
+  left: 8px;
+  right: 8px;
+  padding: 5px 9px 5px 6px;
+  font-size: 11.5px;
+}
+.l07-chip {
+  --c: var(--ink-3);
+  flex: 1 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 7px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: color-mix(in srgb, var(--card) 94%, transparent);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.l07-chip.is-partial {
+  border-color: var(--c);
+}
+.l07-chip.is-done {
+  background: var(--good);
+  border-color: var(--good);
+  color: #fff;
+}
+.l07-chip.is-short {
+  background: var(--bad);
+  border-color: var(--bad);
+  color: #fff;
+}
+.l07-chip.is-focus {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--c) 45%, transparent);
+}
+
+/* ---------- win badge ---------- */
+.l07-win {
+  position: absolute;
+  z-index: 5;
+  right: 56px;
+  bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px 8px 10px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--good) 45%, var(--line));
+  background: color-mix(in srgb, var(--card) 94%, transparent);
+  box-shadow: var(--shadow-2);
+  animation: fade-up 0.4s var(--ease) both;
+}
+.l07--compact .l07-win {
+  right: auto;
+  left: 10px;
+  bottom: 64px;
+}
+.l07-win__led {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #6b2a22;
+  box-shadow: inset 0 -2px 3px rgba(0, 0, 0, 0.3);
+  transition: background 0.08s, box-shadow 0.08s;
+}
+.l07-win__led.is-on {
+  background: #ff4b32;
+  box-shadow: 0 0 10px 3px rgba(255, 80, 50, 0.55), inset 0 -2px 3px rgba(0, 0, 0, 0.15);
+}
+.l07-win__title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: var(--good);
+}
+.l07-win__sub {
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+
+/* ---------- wire animations ---------- */
+.l07-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: l07-draw 0.45s var(--ease) forwards;
+}
+@keyframes l07-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+.l07-ants {
+  animation: l07-ants 0.6s linear infinite;
+}
+@keyframes l07-ants {
+  to {
+    stroke-dashoffset: -7;
+  }
+}
+@keyframes l07-pop {
+  0% {
+    transform: scale(0.4);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* ---------- 555 explainer (article) ---------- */
+.l07-astable {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: 22px;
+  padding: 20px;
+}
+.l07-astable__controls {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.l07-astable__out {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.l07-astable__top {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+.l07-bigled {
+  flex: none;
+  width: 74px;
+  height: 74px;
+  display: grid;
+  place-items: center;
+}
+.l07-astable__readouts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  flex: 1;
+}
+.l07-astable__note {
+  font-size: 12.5px;
+  color: var(--ink-3);
+  line-height: 1.45;
+}
+.l07-scope {
+  border-radius: 10px;
+  background: #11140f;
+  border: 1px solid #2a2f27;
+  overflow: hidden;
+}
+@media (max-width: 720px) {
+  .l07-astable {
+    grid-template-columns: 1fr;
+    padding: 14px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .l07-draw {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+  .l07-ants {
+    animation: none;
+  }
+}
