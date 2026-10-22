@@ -16,10 +16,6 @@ const ACCENT = '#e0542c'
 /* Arrows & guide lines                                                */
 /* ------------------------------------------------------------------ */
 
-export function accentMat() {
-  return <meshPhysicalMaterial color={ACCENT} emissive={ACCENT} emissiveIntensity={0.25} roughness={0.35} clearcoat={0.8} />
-}
-
 /** A tube arrow along a smooth path, with a cone head at the end. */
 export function Arrow({ pts, r = 0.5, head = 2.2, color = ACCENT }: { pts: [number, number, number][]; r?: number; head?: number; color?: string }) {
   const { geo, end, dir } = useMemo(() => {
@@ -416,30 +412,6 @@ export function MagnifiedDisc({ map, R, u0, v0, spanU, spanV }: { map: THREE.Tex
     <mesh geometry={geo}>
       <meshStandardMaterial map={map} roughness={0.6} />
     </mesh>
-  )
-}
-
-/* ------------------------------------------------------------------ */
-/* Screen-printing squeegee                                            */
-/* ------------------------------------------------------------------ */
-
-export function Squeegee({ len = 22 }: { len?: number }) {
-  return (
-    <group>
-      {/* rubber blade, bottom edge on y = 0 */}
-      <RoundedBox args={[len, 6, 1.2]} radius={0.3} smoothness={3} position={[0, 3, 0]} castShadow>
-        <meshPhysicalMaterial color="#2f6f5a" roughness={0.6} clearcoat={0.2} />
-      </RoundedBox>
-      {/* wooden handle */}
-      <RoundedBox args={[len + 1.5, 7, 4.2]} radius={1.2} smoothness={4} position={[0, 8.6, 0]} castShadow>
-        <meshPhysicalMaterial color="#c88d55" roughness={0.5} clearcoat={0.5} clearcoatRoughness={0.4} />
-      </RoundedBox>
-      {/* white ink bead along the blade */}
-      <mesh position={[0, 0.6, 1.0]} rotation={[0, 0, Math.PI / 2]} castShadow>
-        <capsuleGeometry args={[0.65, len - 3, 8, 20]} />
-        <meshPhysicalMaterial color="#f6f3ea" roughness={0.3} clearcoat={0.6} />
-      </mesh>
-    </group>
   )
 }
 

@@ -4,9 +4,9 @@
  */
 import { useMemo } from 'react'
 import * as THREE from 'three'
-import { Billboard, RoundedBox } from '@react-three/drei'
+import { Billboard } from '@react-three/drei'
 import { mats } from '@/pcb/parts3d'
-import { canvasTex, glowTex, rrect } from './textures'
+import { canvasTex, glowTex } from './textures'
 
 /* ------------------------------------------------------------------ */
 /* Glow                                                                */
@@ -406,13 +406,3 @@ export function Paper({ w, h, map, curl = 3, curlFrom = 0.72, side = 'x' }: { w:
     </mesh>
   )
 }
-
-/* ------------------------------------------------------------------ */
-/* Shared label helper                                                 */
-/* ------------------------------------------------------------------ */
-
-export function textTex(key: string, w: number, h: number, draw: (ctx: CanvasRenderingContext2D, w: number, h: number) => void) {
-  return canvasTex(key, w, h, draw)
-}
-
-export { RoundedBox, rrect }
