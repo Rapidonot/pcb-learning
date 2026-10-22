@@ -58,43 +58,42 @@ function Sec({
   id,
   props,
   children,
+  title,
   className = '',
 }: {
   id: SectionId
   props: DatasheetProps
   children: ReactNode
+  title?: ReactNode
   className?: string
 }) {
   const s = sectionById(id)
   const on = props.section === id
-  return (
-    <section
-      data-sec={id}
-      className={`l6b-sec ${on ? 'is-on' : ''} ${className}`}
-      onClick={() => props.onSection(id)}
+  const hot = (
+    <button
+      type="button"
+      className="l6b-hot"
+      aria-label={`Explain: ${s.name}`}
+      onClick={(e) => {
+        e.stopPropagation()
+        props.onSection(id)
+      }}
     >
-      <button
-        type="button"
-        className="l6b-hot"
-        aria-label={`Explain: ${s.name}`}
-        onClick={(e) => {
-          e.stopPropagation()
-          props.onSection(id)
-        }}
-      >
-        {s.n}
-      </button>
+      {s.n}
+    </button>
+  )
+  return (
+    <section data-sec={id} className={`l6b-sec ${on ? 'is-on' : ''} ${title ? '' : 'l6b-sec--float'} ${className}`} onClick={() => props.onSection(id)}>
+      {title ? (
+        <h3 className="l6b-h">
+          {hot}
+          {title}
+        </h3>
+      ) : (
+        hot
+      )}
       {children}
     </section>
-  )
-}
-
-function H({ n, children }: { n: number; children: ReactNode }) {
-  return (
-    <h3 className="l6b-h">
-      <span className="l6b-h__n">{n}</span>
-      {children}
-    </h3>
   )
 }
 
@@ -160,7 +159,7 @@ function Pinout({ props }: { props: DatasheetProps }) {
               y={p.y}
               textAnchor={p.left ? 'start' : 'end'}
               dominantBaseline="central"
-              fontSize={10}
+              fontSize={11}
               fontWeight={700}
               fill={INK}
               fontFamily="IBM Plex Mono, monospace"
@@ -172,7 +171,7 @@ function Pinout({ props }: { props: DatasheetProps }) {
               y={p.y}
               textAnchor={p.left ? 'end' : 'start'}
               dominantBaseline="central"
-              fontSize={11.5}
+              fontSize={13}
               fontWeight={600}
               className="l6b-pin__name"
               fontFamily="IBM Plex Mono, monospace"
@@ -376,25 +375,26 @@ function PackageDrawing() {
         TOP VIEW
       </text>
 
-      {/* side view */}
-      <g transform="translate(276 92)">
-        <rect x={0} y={0} width={bh * 0.92} height={1.45 * k} rx={2} fill="#fbfaf7" stroke={INK} strokeWidth={1.2} />
-        {[0, 1, 2, 3].map((i) => (
+      {/* end view (looking at the short side): body with gull-wing leads */}
+      <g transform="translate(318 96)">
+        <text x={0} y={-18} fontSize={8} fill={DIM} textAnchor="middle" fontFamily="IBM Plex Mono, monospace" letterSpacing="0.1em">
+          END VIEW
+        </text>
+        <rect x={-bw / 2} y={0} width={bw} height={1.45 * k - 2} rx={3} fill="#fbfaf7" stroke={INK} strokeWidth={1.2} />
+        {[-1, 1].map((sx) => (
           <path
-            key={i}
-            d={`M ${10 + i * 21} ${1.45 * k - 6} l 0 6 l 0 ${0.3 * k} l 9 0`}
+            key={sx}
+            d={`M ${sx * (bw / 2)} ${11} l ${sx * 5} 0 q ${sx * 4} 0 ${sx * 5} 6 l ${sx * 1.5} 9 q ${sx * 1} 5 ${sx * 6} 5 l ${sx * (lead - 15)} 0`}
             fill="none"
             stroke={INK}
-            strokeWidth={2}
+            strokeWidth={2.6}
             strokeLinecap="round"
+            strokeLinejoin="round"
           />
         ))}
-        <line x1={-8} y1={1.75 * k + 0.5} x2={bh * 0.92 + 8} y2={1.75 * k + 0.5} stroke="#9a9488" strokeWidth={0.8} strokeDasharray="3 2" />
-        <line x1={bh * 0.92 + 4} y1={0} x2={bh * 0.92 + 22} y2={0} stroke={DIM} strokeWidth={0.6} />
-        <Arrow x1={bh * 0.92 + 16} y1={0} x2={bh * 0.92 + 16} y2={1.75 * k} label="1.75 max" lx={bh * 0.92 - 10} ly={1.75 * k + 22} />
-        <text x={(bh * 0.92) / 2} y={-14} fontSize={8} fill={DIM} textAnchor="middle" fontFamily="IBM Plex Mono, monospace" letterSpacing="0.1em">
-          SIDE VIEW
-        </text>
+        <line x1={-bw / 2 - lead - 6} y1={1.75 * k - 0.5} x2={bw / 2 + lead + 6} y2={1.75 * k - 0.5} stroke="#9a9488" strokeWidth={0.8} strokeDasharray="3 2" />
+        <line x1={bw / 2 + 4} y1={0} x2={bw / 2 + lead + 18} y2={0} stroke={DIM} strokeWidth={0.6} />
+        <Arrow x1={bw / 2 + lead + 12} y1={0} x2={bw / 2 + lead + 12} y2={1.75 * k - 0.5} label="1.75 max" lx={0} ly={1.75 * k + 16} />
       </g>
     </svg>
   )
@@ -403,14 +403,14 @@ function PackageDrawing() {
 /** SOIC-8 recommended land pattern. 1 mm = 20 px. */
 export function LandDrawing({ compact = false }: { compact?: boolean }) {
   const k = 20
-  const cx = 150
+  const cx = 165
   const cy = 108
   const ys = [-1.905, -0.635, 0.635, 1.905].map((v) => cy + v * k)
   const pw = 1.55 * k
   const ph = 0.6 * k
   const xc = 2.7 * k
   return (
-    <svg viewBox={compact ? '40 30 230 160' : '0 0 400 220'} className="l6b-mech" role="img" aria-label="Recommended land pattern for SOIC-8">
+    <svg viewBox={compact ? '84 24 250 176' : '0 0 400 220'} className="l6b-mech" role="img" aria-label="Recommended land pattern for SOIC-8">
       <ArrowDefs />
       {/* centre lines */}
       <line x1={cx} y1={cy - 70} x2={cx} y2={cy + 70} stroke="#b2ab9c" strokeWidth={0.6} strokeDasharray="6 3 1 3" />
@@ -445,7 +445,12 @@ export function LandDrawing({ compact = false }: { compact?: boolean }) {
       <Arrow x1={cx + xc + pw / 2 + 38} y1={ys[0]} x2={cx + xc + pw / 2 + 38} y2={ys[1]} label="1.27" lx={cx + xc + pw / 2 + 48} ly={(ys[0] + ys[1]) / 2} anchor="start" />
       <line x1={cx + xc + pw / 2 + 14} y1={ys[3] - ph / 2} x2={cx + xc + pw / 2 + 44} y2={ys[3] - ph / 2} stroke={DIM} strokeWidth={0.6} />
       <line x1={cx + xc + pw / 2 + 14} y1={ys[3] + ph / 2} x2={cx + xc + pw / 2 + 44} y2={ys[3] + ph / 2} stroke={DIM} strokeWidth={0.6} />
-      <Arrow x1={cx + xc + pw / 2 + 38} y1={ys[3] - ph / 2 - 9} x2={cx + xc + pw / 2 + 38} y2={ys[3] - ph / 2} label="0.60" lx={cx + xc + pw / 2 + 48} ly={ys[3]} anchor="start" />
+      {/* pad width: arrows from outside pointing in */}
+      <line x1={cx + xc + pw / 2 + 38} y1={ys[3] - ph / 2 - 11} x2={cx + xc + pw / 2 + 38} y2={ys[3] - ph / 2} stroke={DIM} strokeWidth={0.8} markerEnd="url(#l6b-arr)" />
+      <line x1={cx + xc + pw / 2 + 38} y1={ys[3] + ph / 2 + 11} x2={cx + xc + pw / 2 + 38} y2={ys[3] + ph / 2} stroke={DIM} strokeWidth={0.8} markerEnd="url(#l6b-arr)" />
+      <text x={cx + xc + pw / 2 + 48} y={ys[3]} fontSize={8.5} fill={INK} dominantBaseline="central" fontFamily="IBM Plex Mono, monospace" fontWeight={600}>
+        0.60
+      </text>
       {!compact && (
         <text x={cx} y={cy + 100} fontSize={8} fill={DIM} textAnchor="middle" fontFamily="IBM Plex Mono, monospace" letterSpacing="0.1em">
           ALL DIMENSIONS IN MM · PADS SHOWN HATCHED
@@ -526,9 +531,8 @@ export function Datasheet(props: DatasheetProps) {
             <span>DIP-8 (P)</span>
           </div>
         </Sec>
-        <div className="l6b-cols">
-          <Sec id="features" props={props}>
-            <H n={1}>Features</H>
+        <Sec id="features" props={props} title="Features">
+          <div className="l6b-cols">
             <ul className="l6b-list">
               <li>Timing from microseconds to hours</li>
               <li>Astable (free-running) or monostable (one-shot) operation</li>
@@ -537,55 +541,61 @@ export function Datasheet(props: DatasheetProps) {
               <li>TTL-compatible output at 5 V</li>
               <li>Available in SOIC-8 and DIP-8</li>
             </ul>
-            <H n={2}>Description</H>
-            <p className="l6b-p">
-              The EDU555 produces accurate time delays or oscillation. In astable mode, two resistors and one capacitor set the
-              frequency and duty cycle. Its output can drive an LED directly through a series resistor.
-            </p>
-          </Sec>
-          <Sec id="pinout" props={props}>
-            <H n={3}>Pin configuration</H>
-            <div className="l6b-caption">D or P package (top view)</div>
-            <Pinout props={props} />
-          </Sec>
-        </div>
-        <div className="l6b-pinfn">
-          <div className="l6b-caption">Pin functions</div>
-          <div className="l6b-tablewrap">
-            <table className="l6b-table l6b-table--pins">
-              <thead>
-                <tr>
-                  <th>Pin</th>
-                  <th>Name</th>
-                  <th>Type</th>
-                  <th>Description</th>
-                </tr>
-              </thead>
-              <tbody>
-                {PINS.map((p) => (
-                  <tr
-                    key={p.num}
-                    className={`is-clickable ${props.pin === p.num ? 'is-sel' : ''}`}
-                    onClick={() => props.onPin(p.num)}
-                  >
-                    <td className="mono">{p.num}</td>
-                    <td className="mono">
-                      <b>{p.name}</b>
-                    </td>
-                    <td>{p.type}</td>
-                    <td>{p.desc.split('. ')[0]}.</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div>
+              <h4 className="l6b-h4">Applications</h4>
+              <p className="l6b-p">LED blinkers and flashers · Precision timing · Pulse generation · Time-delay generation</p>
+              <h4 className="l6b-h4">Description</h4>
+              <p className="l6b-p">
+                The EDU555 produces accurate time delays or oscillation. In astable mode, two resistors and one capacitor set
+                the frequency and duty cycle. Its output can drive an LED directly through a series resistor.
+              </p>
+            </div>
           </div>
-        </div>
+        </Sec>
+        <Sec id="pinout" props={props} title="Pin configuration and functions">
+          <div className="l6b-pinrow">
+            <div className="l6b-pinrow__fig">
+              <div className="l6b-caption">D or P package · top view</div>
+              <Pinout props={props} />
+            </div>
+            <div className="l6b-tablewrap l6b-pinrow__tbl">
+              <table className="l6b-table l6b-table--pins">
+                <thead>
+                  <tr>
+                    <th>Pin</th>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Function</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {PINS.map((p) => (
+                    <tr
+                      key={p.num}
+                      className={`is-clickable ${props.pin === p.num ? 'is-sel' : ''}`}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        props.onPin(p.num)
+                      }}
+                    >
+                      <td className="mono">{p.num}</td>
+                      <td className="mono">
+                        <b>{p.name}</b>
+                      </td>
+                      <td>{p.type}</td>
+                      <td>{p.short}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </Sec>
       </Page>
 
       {/* PAGE 2 */}
       <Page n={2}>
-        <Sec id="absmax" props={props}>
-          <H n={4}>Absolute maximum ratings</H>
+        <Sec id="absmax" props={props} title="Absolute maximum ratings">
           <div className="l6b-caption">Over operating free-air temperature range (unless otherwise noted)<sup>(1)</sup></div>
           <Table
             props={props}
@@ -604,8 +614,7 @@ export function Datasheet(props: DatasheetProps) {
             Operation at these conditions is not implied.
           </p>
         </Sec>
-        <Sec id="recommended" props={props}>
-          <H n={5}>Recommended operating conditions</H>
+        <Sec id="recommended" props={props} title="Recommended operating conditions">
           <Table
             props={props}
             section="recommended"
@@ -618,8 +627,7 @@ export function Datasheet(props: DatasheetProps) {
             ]}
           />
         </Sec>
-        <Sec id="electrical" props={props}>
-          <H n={6}>Electrical characteristics</H>
+        <Sec id="electrical" props={props} title="Electrical characteristics">
           <div className="l6b-caption">VCC = 5 V, TA = 25 °C (unless otherwise noted)</div>
           <Table
             props={props}
@@ -639,8 +647,7 @@ export function Datasheet(props: DatasheetProps) {
 
       {/* PAGE 3 */}
       <Page n={3}>
-        <Sec id="application" props={props}>
-          <H n={7}>Typical application: astable LED blinker</H>
+        <Sec id="application" props={props} title="Typical application: astable LED blinker">
           <div className="l6b-figure">
             <AppCircuit />
           </div>
@@ -657,15 +664,13 @@ export function Datasheet(props: DatasheetProps) {
 
       {/* PAGE 4 */}
       <Page n={4}>
-        <Sec id="package" props={props}>
-          <H n={8}>Package outline: SOIC-8 (D)</H>
+        <Sec id="package" props={props} title="Package outline: SOIC-8 (D)">
           <div className="l6b-figure">
             <PackageDrawing />
           </div>
           <p className="l6b-note">Dimensions in millimetres. 1.27 mm pitch (0.050 in). Body size excludes mould flash.</p>
         </Sec>
-        <Sec id="land" props={props}>
-          <H n={9}>Recommended land pattern: SOIC-8 (D)</H>
+        <Sec id="land" props={props} title="Recommended land pattern: SOIC-8 (D)">
           <div className="l6b-figure">
             <LandDrawing />
           </div>

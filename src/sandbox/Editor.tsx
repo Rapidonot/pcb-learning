@@ -6,7 +6,7 @@ import { dist, type Vec } from '@/pcb/geom'
 import { toast } from '@/lib/toast'
 import { Confetti } from '@/components/Confetti'
 import { EditorCanvas, type EditorCanvasHandle } from './EditorCanvas'
-import { BoardLayer, CursorOverlay, NET_COLORS, PartsBinLabel, StaticOverlay, type DraftRect } from './CanvasLayers'
+import { BoardLayer, CursorOverlay, NET_COLORS, PartsBinLabel, PourOutlines, StaticOverlay, type DraftRect } from './CanvasLayers'
 import { clearSaved, createCursorStore, loadSaved, useDocStore, writeSaved, type HoverInfo } from './store'
 import { appendPts, cornerPath, docBounds, hitTest, partOnBoard, round3, routeSnap, routeStart, snapPt, trackAt, trackLength, type Hit } from './geometry'
 import { computeChecklist } from './checklist'
@@ -69,7 +69,12 @@ export function Editor() {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [schOpen, setSchOpen] = useState(false)
   const [helpOpen, setHelpOpen] = useState(false)
-  const [drcState, setDrc] = useState<DrcState | null>(null)
+  const [drcState, setDrc] = useState<DrcState | null>(() => {
+    // a board that passed DRC before the refresh is re-checked (cheap), so the checklist stays honest
+    if (!saved?.drcClean) return null
+    const d = store.get()
+    return { errors: runDrcEngine(d, beginnerRules, analyze(d)), doc: d, manual: false, at: Date.now() }
+  })
   const [focus, setFocus] = useState<Vec | null>(null)
   const [route, setRouteState] = useState<RouteState | null>(null)
   const [pourDraft, setPourDraft] = useState<DraftRect | null>(null)
@@ -107,10 +112,11 @@ export function Editor() {
   /* ---------------- persistence ---------------- */
   useEffect(() => {
     const t = window.setTimeout(() => {
-      if (writeSaved({ v: 1, doc, viewed3d, prefs })) setSavedAt(Date.now())
+      const drcClean = !!drcState && drcState.doc === doc && drcState.errors.length === 0
+      if (writeSaved({ v: 1, doc, viewed3d, prefs, drcClean })) setSavedAt(Date.now())
     }, 450)
     return () => window.clearTimeout(t)
-  }, [doc, viewed3d, prefs])
+  }, [doc, viewed3d, prefs, drcState])
 
   /* ---------------- live feedback ---------------- */
   const prevComplete = useRef<Set<string>>(conn.complete)
@@ -233,7 +239,7 @@ export function Editor() {
       toast({ kind: 'error', title: 'Can’t connect there', body: snap.reason }, 3600)
       return
     }
-    const next = extendRoute(r, snap.pt, prefs.corner)
+    const next = { ...extendRoute(r, snap.pt, prefs.corner), marks: [...(r.marks ?? []), r.pts.length] }
     if (snap.ok) {
       finishRoute(next)
       return
@@ -250,7 +256,7 @@ export function Editor() {
     const last = next.pts[next.pts.length - 1]
     const via = { id: newId('v'), x: round3(last[0]), y: round3(last[1]), d: 0.6, drill: 0.3 }
     const done = next.pts.length >= 2 ? [...next.done, curTrack(next)] : next.done
-    setRoute({ ...next, done, vias: [...next.vias, via], pts: [last], layer })
+    setRoute({ ...next, done, vias: [...next.vias, via], pts: [last], marks: [], layer })
     setActiveLayer(layer)
     once('via-mid', () =>
       toast({ kind: 'success', title: why === 'via' ? 'Via dropped' : 'Layer switched', body: `A via carries the track to the ${layer} layer. Keep clicking to route on ${layer}.` }, 3600),
@@ -265,7 +271,7 @@ export function Editor() {
     if (r) {
       if (r.pts.length >= 2) {
         const last = r.pts[r.pts.length - 1]
-        setRoute({ ...r, done: [...r.done, curTrack(r)], pts: [last], width: w })
+        setRoute({ ...r, done: [...r.done, curTrack(r)], pts: [last], marks: [], width: w })
       } else setRoute({ ...r, width: w })
     }
     toast({ kind: 'success', title: 'Track width', body: `${w.toFixed(2)} mm${w >= 0.5 ? ' (good for power and GND)' : ' (good for signals)'}` }, 1600)
@@ -275,7 +281,10 @@ export function Editor() {
     const r = routeRef.current
     if (!r) return
     if (r.pts.length > 1) {
-      setRoute({ ...r, pts: r.pts.slice(0, -1) })
+      const marks = [...(r.marks ?? [])]
+      let keep = marks.pop() ?? r.pts.length - 1
+      if (keep < 1 || keep >= r.pts.length) keep = r.pts.length - 1
+      setRoute({ ...r, pts: r.pts.slice(0, keep), marks })
       return
     }
     const start = r.pts[0]
@@ -283,7 +292,7 @@ export function Editor() {
     if (r.done.length) {
       const prev = r.done[r.done.length - 1]
       const vias = viaIdx >= 0 ? r.vias.filter((_, i) => i !== viaIdx) : r.vias
-      setRoute({ ...r, done: r.done.slice(0, -1), vias, pts: prev.pts.slice(0, -1).length ? prev.pts.slice(0, -1) : prev.pts, layer: prev.layer, width: prev.width })
+      setRoute({ ...r, done: r.done.slice(0, -1), vias, pts: prev.pts.slice(0, -1).length ? prev.pts.slice(0, -1) : prev.pts, marks: [], layer: prev.layer, width: prev.width })
       if (prev.layer !== r.layer) setActiveLayer(prev.layer)
       return
     }
@@ -343,7 +352,7 @@ export function Editor() {
     store.commit((d) => ({ ...d, parts: clone(refPlaced) }))
     setSel([])
     toast({ kind: 'success', title: 'Reference placement loaded', body: 'Every part is where the course puts it. Ctrl+Z to undo.' })
-    window.setTimeout(() => canvasRef.current?.zoomTo({ x: -1, y: -2, w: 32, h: 29 }), 30)
+    window.setTimeout(() => canvasRef.current?.zoomTo(framing({ x: -1, y: -2, w: 32, h: 29 })), 30)
   }, [store])
 
   const loadSolution = useCallback(() => {
@@ -353,7 +362,7 @@ export function Editor() {
     setSel([])
     setHighlightNet(null)
     toast({ kind: 'success', title: 'Reference solution loaded', body: 'Placed, routed and poured. Run Design › Check DRC to confirm it is clean.' }, 4200)
-    window.setTimeout(() => canvasRef.current?.zoomTo({ x: -1, y: -2, w: 32, h: 29 }), 30)
+    window.setTimeout(() => canvasRef.current?.zoomTo(framing({ x: -1, y: -2, w: 32, h: 29 })), 30)
   }, [store, setRoute])
 
   const reset = useCallback(() => {
@@ -367,7 +376,7 @@ export function Editor() {
     setViewed3d(false)
     setFocus(null)
     toast({ kind: 'success', title: 'Board reset', body: 'Back to right after Convert to PCB. Ctrl+Z brings your work back.' }, 3600)
-    window.setTimeout(() => canvasRef.current?.zoomTo(docBounds(stages.converted())), 30)
+    window.setTimeout(() => canvasRef.current?.zoomTo(framing(docBounds(stages.converted()))), 30)
   }, [store, setRoute])
 
   const crossProbe = useCallback(
@@ -387,6 +396,8 @@ export function Editor() {
 
   const focusDrc = useCallback((at: Vec, items: string[]) => {
     setFocus(at)
+    // on phones the bottom sheet covers the board: fold it away so the error is visible
+    if (window.innerWidth <= 760) setSheetOpen(false)
     if (view !== 'eda') setView('eda')
     canvasRef.current?.zoomTo({ x: at[0] - 3, y: at[1] - 3, w: 6, h: 6 }, { minW: 20 })
     const next: Sel[] = []
@@ -491,6 +502,27 @@ export function Editor() {
     }
   }
 
+  // drag updates are coalesced to one per animation frame (each update is absolute, so skipping is safe)
+  const raf = useRef(0)
+  const pendingLive = useRef<((d: BoardDoc) => BoardDoc) | null>(null)
+  const scheduleLive = (fn: (d: BoardDoc) => BoardDoc) => {
+    pendingLive.current = fn
+    if (raf.current) return
+    raf.current = requestAnimationFrame(() => {
+      raf.current = 0
+      const f = pendingLive.current
+      pendingLive.current = null
+      if (f) store.live(f)
+    })
+  }
+  const flushLive = (apply = true) => {
+    if (raf.current) cancelAnimationFrame(raf.current)
+    raf.current = 0
+    const f = pendingLive.current
+    pendingLive.current = null
+    if (f && apply) store.live(f)
+  }
+
   const onMove = (e: React.PointerEvent<SVGSVGElement>, w: Vec) => {
     if (view !== 'eda') {
       cursor.set({ world: w, snap: null, hover: null })
@@ -507,18 +539,18 @@ export function Editor() {
         setBusy(true)
       }
       const g = prefs.grid
-      store.live((doc0) => ({
+      const at = (o: Vec): Vec => [round3(Math.round((o[0] + dx) / g) * g), round3(Math.round((o[1] + dy) / g) * g)]
+      scheduleLive((doc0) => ({
         ...doc0,
         parts: doc0.parts.map((p) => {
           const o = d.orig.get(p.ref)
           if (!o) return p
-          const nx = round3(Math.round((o[0] + dx) / g) * g)
-          const ny = round3(Math.round((o[1] + dy) / g) * g)
+          const [nx, ny] = at(o)
           return nx === p.x && ny === p.y ? p : { ...p, x: nx, y: ny }
         }),
       }))
-      const lead = store.get().parts.find((p) => p.ref === d.refs[0])
-      cursor.set({ world: w, snap: lead ? { pt: [lead.x, lead.y], kind: 'grid', ok: true } : null })
+      const lead = d.orig.get(d.refs[0])
+      cursor.set({ world: w, snap: lead ? { pt: at(lead), kind: 'grid', ok: true } : null })
       return
     }
     if (d?.kind === 'via') {
@@ -530,7 +562,7 @@ export function Editor() {
         setBusy(true)
       }
       const p = snapPt([d.orig[0] + dx, d.orig[1] + dy], prefs.grid)
-      store.live((doc0) => ({ ...doc0, vias: doc0.vias.map((v) => (v.id === d.id ? { ...v, x: p[0], y: p[1] } : v)) }))
+      scheduleLive((doc0) => ({ ...doc0, vias: doc0.vias.map((v) => (v.id === d.id ? { ...v, x: p[0], y: p[1] } : v)) }))
       cursor.set({ world: w, snap: { pt: p, kind: 'grid', ok: true } })
       return
     }
@@ -553,7 +585,7 @@ export function Editor() {
     const hover = hoverOf(hit)
     let snap: Snap | null = null
     if (r) {
-      snap = routeSnap(doc, conn, w, { net: r.net, layer: r.layer, tol, grid: prefs.grid, startPt: r.pts[0], pendingVias: r.vias })
+      snap = routeSnap(doc, conn, w, { net: r.net, layer: r.layer, tol, grid: prefs.grid, startPt: r.pts[0], lastPt: r.pts[r.pts.length - 1], pendingVias: r.vias })
       if (snap.kind === 'pad' && snap.ok && r.pts.length === 1 && r.done.length === 0 && dist(snap.pt, r.pts[0]) < 1e-6) snap = { ...snap, ok: false }
     } else if (tool === 'route') {
       const st = routeStart(doc, conn, w, tol, activeLayer, (l) => visibleLayers[l])
@@ -574,6 +606,7 @@ export function Editor() {
     drag.current = null
     if (d?.kind === 'parts') {
       setBusy(false)
+      flushLive()
       if (d.moved) {
         store.endLive()
         const now = store.get()
@@ -587,6 +620,7 @@ export function Editor() {
     }
     if (d?.kind === 'via') {
       setBusy(false)
+      flushLive()
       if (d.moved) store.endLive()
       return
     }
@@ -619,7 +653,7 @@ export function Editor() {
         return
       }
       const r = routeRef.current
-      let snap = routeSnap(doc, conn, w, { net: r.net, layer: r.layer, tol, grid: prefs.grid, startPt: r.pts[0], pendingVias: r.vias })
+      let snap = routeSnap(doc, conn, w, { net: r.net, layer: r.layer, tol, grid: prefs.grid, startPt: r.pts[0], lastPt: r.pts[r.pts.length - 1], pendingVias: r.vias })
       if (snap.kind === 'pad' && r.pts.length === 1 && r.done.length === 0 && dist(snap.pt, r.pts[0]) < 1e-6) snap = { ...snap, ok: false, reason: undefined }
       routeClick(snap)
       return
@@ -662,6 +696,7 @@ export function Editor() {
   const onGestureCancel = () => {
     const d = drag.current
     drag.current = null
+    flushLive(false)
     if (d?.kind === 'parts' || d?.kind === 'via') store.cancelLive()
     setPourDraft(null)
     setBusy(false)
@@ -690,7 +725,7 @@ export function Editor() {
         store.redo()
       } else if (code === 'KeyS') {
         e.preventDefault()
-        if (writeSaved({ v: 1, doc, viewed3d, prefs })) {
+        if (writeSaved({ v: 1, doc, viewed3d, prefs, drcClean: !!drcState && drcState.doc === doc && drcState.errors.length === 0 })) {
           setSavedAt(Date.now())
           toast({ kind: 'success', title: 'Saved', body: 'Your board is stored in this browser.' }, 1800)
         }
@@ -815,8 +850,8 @@ export function Editor() {
   }, [layers.drc, drcState, doc])
 
   const edaVis = useMemo(
-    () => ({ top: visibleLayers.top, bottom: visibleLayers.bottom, silk: layers.silk, outline: layers.outline, ratsnest: layers.ratsnest, pours: layers.pours, refs: layers.silk }),
-    [visibleLayers, layers],
+    () => ({ top: visibleLayers.top, bottom: visibleLayers.bottom, silk: layers.silk, outline: layers.outline, ratsnest: layers.ratsnest, pours: layers.pours && !busy, refs: layers.silk }),
+    [visibleLayers, layers, busy],
   )
   const photoVis = useMemo(() => ({ bodies: true, ratsnest: false, pours: layers.pours }), [layers.pours])
   const netColors = prefs.netColors ? NET_COLORS : undefined
@@ -916,6 +951,7 @@ export function Editor() {
                   finish={prefs.finish}
                   side="top"
                 />
+                {busy && layers.pours && doc.pours.length > 0 && <PourOutlines doc={doc} activeLayer={activeLayer} />}
                 <PartsBinLabel doc={doc} />
                 <StaticOverlay doc={doc} conn={conn} sel={sel} showNetLabels={prefs.netLabels} highlightNet={highlightNet} focus={focus} showEmptyHint={noneOnBoard} visible={visibleLayers} />
                 <CursorOverlay

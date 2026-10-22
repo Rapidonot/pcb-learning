@@ -19,6 +19,8 @@ export interface RouteState {
   width: number
   /** the polyline currently being drawn (first point = start) */
   pts: Vec[]
+  /** pts.length before each click, so Backspace removes everything one click added */
+  marks?: number[]
   /** pieces already finished in this routing session (before a layer or width change) */
   done: Track[]
   /** vias dropped during this routing session */

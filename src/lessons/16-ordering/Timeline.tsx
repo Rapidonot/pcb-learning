@@ -86,7 +86,7 @@ export function Timeline({ order, onClose, onDone }: { order: Order; onClose: ()
     art = (
       <div className="l16-finale">
         <Suspense fallback={<div className="spinner" />}>
-          <Board3D doc={doc} maskColor={order.mask} finish={finish} showParts blink autoRotate shadow />
+          <Board3D doc={doc} maskColor={order.mask} finish={finish} showParts blink autoRotate shadow camera="ortho" />
         </Suspense>
         <div className="l16-finale__glow" />
       </div>

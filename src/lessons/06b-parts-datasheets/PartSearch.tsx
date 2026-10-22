@@ -8,6 +8,9 @@ import { CANDIDATES, type Candidate, type Engine } from './data'
 
 const Preview3D = lazy(() => import('./Preview3D'))
 
+/** display order: the right answer is not the first card */
+const ORDER = ['cmos-soic', 'ne555-dip', 'ne555-soic', 'lv-vssop', 'ne555-user']
+
 function fpBox(fp: FootprintDef, pad = 0.9) {
   const w = fp.courtyard.w + pad
   const h = fp.courtyard.h + pad
@@ -53,10 +56,11 @@ export function PartSearch({ placedId, onPlace }: PartSearchProps) {
   const [engine, setEngine] = useState<Engine>('lcsc')
   const [query, setQuery] = useState('555')
   const [filter, setFilter] = useState('')
-  const [sel, setSel] = useState<string>('ne555-dip')
+  const [sel, setSel] = useState<string>('cmos-soic')
   const [tab, setTab] = useState<'footprint' | '3d' | 'symbol'>('footprint')
   const [attempt, setAttempt] = useState<string | null>(placedId)
   const detailRef = useRef<HTMLDivElement>(null)
+  const verdictRef = useRef<HTMLDivElement>(null)
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -64,6 +68,7 @@ export function PartSearch({ placedId, onPlace }: PartSearchProps) {
     return CANDIDATES.filter((c) => c.engines.includes(engine))
       .filter((c) => !q || `${c.title} ${c.desc} 555 timer`.toLowerCase().includes(q))
       .filter((c) => !f || `${c.pkg} ${c.mount} ${c.title} ${c.cls ?? ''}`.toLowerCase().includes(f))
+      .sort((a, b) => ORDER.indexOf(a.id) - ORDER.indexOf(b.id))
   }, [engine, query, filter])
 
   const cur = CANDIDATES.find((c) => c.id === sel) ?? results[0]
@@ -219,12 +224,13 @@ export function PartSearch({ placedId, onPlace }: PartSearchProps) {
               onClick={() => {
                 setAttempt(shown.id)
                 onPlace(shown)
+                window.setTimeout(() => verdictRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 60)
               }}
             >
               Place {shown.title} ({shown.pkg})
             </button>
-            {tried && (
-              <div className={`l6b-verdict ${tried.verdict === 'right' ? 'is-good' : tried.verdict === 'extended' ? 'is-warn' : 'is-bad'}`} role="status">
+            {tried && tried.id === shown.id && (
+              <div ref={verdictRef} className={`l6b-verdict ${tried.verdict === 'right' ? 'is-good' : tried.verdict === 'extended' ? 'is-warn' : 'is-bad'}`} role="status">
                 <b>
                   {tried.verdict === 'right'
                     ? 'Great choice'

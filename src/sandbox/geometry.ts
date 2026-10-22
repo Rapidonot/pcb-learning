@@ -202,7 +202,7 @@ export function routeSnap(
   doc: BoardDoc,
   conn: Connectivity,
   p: Vec,
-  ctx: { net?: string; layer: Layer; tol: number; grid: number; startPt: Vec; pendingVias: Via[] },
+  ctx: { net?: string; layer: Layer; tol: number; grid: number; startPt: Vec; lastPt?: Vec; pendingVias: Via[] },
 ): Snap {
   const pad = padAt(conn, p, ctx.tol)
   if (pad) {
@@ -226,10 +226,20 @@ export function routeSnap(
     const net = conn.netOf.get(`track:${t.track.id}`) ?? t.track.net
     const vtx = t.track.pts.reduce((b, q) => (dist(q, p) < dist(b, p) ? q : b), t.track.pts[0])
     const pt: Vec = dist(vtx, p) < Math.max(ctx.tol * 2, t.track.width) ? vtx : [round3(t.at[0]), round3(t.at[1])]
-    if (ctx.net && net && net !== ctx.net) return { pt: snapPt(p, ctx.grid), kind: 'grid', net, ok: false, reason: `That track is on net ${net}.` }
+    if (ctx.net && net && net !== ctx.net) return { pt: alignSnap(p, ctx.grid, ctx.lastPt), kind: 'grid', net, ok: false, reason: `That track is on net ${net}.` }
     return { pt, kind: 'track', net, ok: dist(pt, ctx.startPt) > 1e-6, label: 'track' }
   }
-  return { pt: snapPt(p, ctx.grid), kind: 'grid', ok: false }
+  return { pt: alignSnap(p, ctx.grid, ctx.lastPt), kind: 'grid', ok: false }
+}
+
+/** Grid snap that also lines up with the last corner, so routes leaving an off-grid pad stay straight. */
+export function alignSnap(p: Vec, grid: number, last?: Vec): Vec {
+  const g = snapPt(p, grid)
+  if (!last) return g
+  const near = Math.max(grid * 0.6, 0.15)
+  if (Math.abs(p[1] - last[1]) < near) g[1] = last[1]
+  if (Math.abs(p[0] - last[0]) < near) g[0] = last[0]
+  return g
 }
 
 /** The path from the last corner to the target, shaped by the corner mode. */

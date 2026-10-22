@@ -169,7 +169,13 @@ function Article() {
         Orange, orange, brown, gold is 3, 3, ×10: <strong>330 Ω ±5%</strong>, Blinky's R3. Surface-mount chip resistors use a
         printed <strong>3-digit code</strong> instead, with the same idea: two digits and then the number of zeros.
       </p>
-      <Formula>331 → 33 + one zero = 330 Ω &nbsp;·&nbsp; 102 → 1 000 Ω = 1 kΩ &nbsp;·&nbsp; 473 → 47 000 Ω = 47 kΩ</Formula>
+      <Formula>
+        331 → 33 and one zero = 330 Ω
+        <br />
+        102 → 10 and two zeros = 1 kΩ
+        <br />
+        473 → 47 and three zeros = 47 kΩ
+      </Formula>
       <p>
         Some precision resistors use 4 digits or a letter code instead. When in doubt, the part's datasheet decides.
       </p>
@@ -181,9 +187,9 @@ function Article() {
       </p>
       <Specs
         items={[
-          { k: 'µF', v: 'microfarad', note: 'a millionth of a farad. Electrolytics, big ceramics' },
-          { k: 'nF', v: 'nanofarad', note: 'a thousandth of a µF: 1 µF = 1000 nF' },
-          { k: 'pF', v: 'picofarad', note: 'a thousandth of a nF: 1 nF = 1000 pF' },
+          { k: 'Micro', v: 'µF', note: 'a millionth of a farad. Electrolytics, big ceramics' },
+          { k: 'Nano', v: 'nF', note: 'a thousandth of a µF: 1 µF = 1000 nF' },
+          { k: 'Pico', v: 'pF', note: 'a thousandth of a nF: 1 nF = 1000 pF' },
           { k: 'Classic', v: '100 nF', note: 'the go-to decoupling value, also written 0.1 µF' },
         ]}
       />

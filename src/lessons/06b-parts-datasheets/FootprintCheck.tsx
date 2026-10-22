@@ -125,7 +125,7 @@ export function FootprintCheck({ cand, onPass, onBack }: { cand: Candidate | nul
       detail:
         dist === null
           ? `Datasheet: ${LAND.pitch.toFixed(2)} mm. Click two neighbouring pads to measure.`
-          : `Measured ${dist.toFixed(2)} mm vs ${LAND.pitch.toFixed(2)} mm.${state.pitch === 'fail' && Math.abs(dist - LAND.pitch) > 0.02 && fp.pads.length === 8 && dist > 2 && fp.id === 'SOIC-8' ? ' Pick two neighbours.' : ''}`,
+          : `Measured ${dist.toFixed(2)} mm vs ${LAND.pitch.toFixed(2)} mm.${state.pitch === 'fail' && fp.id === 'SOIC-8' ? ' Those two are not neighbours: try two pads side by side.' : ''}`,
       action: { label: 'Measure', on: () => (setMode('pitch'), setPicks([])), active: mode === 'pitch' },
     },
     {
@@ -199,7 +199,7 @@ export function FootprintCheck({ cand, onPass, onBack }: { cand: Candidate | nul
                 <line x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke="#ffd166" strokeWidth={0.07} strokeDasharray="0.2 0.12" />
                 <circle cx={a.x} cy={a.y} r={0.12} fill="#ffd166" />
                 <circle cx={b.x} cy={b.y} r={0.12} fill="#ffd166" />
-                <g transform={`translate(${(a.x + b.x) / 2 + (Math.abs(a.x - b.x) < 0.1 ? (a.x < 0 ? -1.6 : 1.6) : 0)} ${(a.y + b.y) / 2 - (Math.abs(a.x - b.x) < 0.1 ? 0 : 0.6)})`}>
+                <g transform={`translate(${(a.x + b.x) / 2 + (Math.abs(a.x - b.x) < 0.1 ? (a.x < 0 ? 2.05 : -2.05) : 0)} ${(a.y + b.y) / 2 - (Math.abs(a.x - b.x) < 0.1 ? 0 : 0.6)})`}>
                   <rect x={-1.05} y={-0.36} width={2.1} height={0.72} rx={0.18} fill="#ffd166" />
                   <text textAnchor="middle" dominantBaseline="central" fontSize={0.46} fontWeight={700} fill="#1b1a17" fontFamily="IBM Plex Mono, monospace">
                     {dist!.toFixed(2)} mm

@@ -58,7 +58,7 @@ function Pads({ fp }: { fp: FootprintDef }) {
 
 function Fit({ span }: { span: number }) {
   const { size } = useThree()
-  const zoom = Math.min(size.width, size.height) / (span * 1.45)
+  const zoom = Math.min(size.width, size.height) / (span * 1.12)
   const d = 60
   const dir = new THREE.Vector3(0.62, 0.85, 1.05).normalize()
   return <OrthographicCamera makeDefault zoom={zoom} near={-200} far={400} position={[dir.x * d, dir.y * d, dir.z * d]} />

@@ -234,7 +234,7 @@ export function EdaMock(props: EdaMockProps) {
   useEffect(() => {
     if (!menu) return
     const h = (e: PointerEvent) => {
-      if (!(e.target as Element).closest?.('.l05-menubar')) setMenu(null)
+      if (!(e.target as Element).closest?.('[data-menu-zone]')) setMenu(null)
     }
     window.addEventListener('pointerdown', h, true)
     return () => window.removeEventListener('pointerdown', h, true)
@@ -773,7 +773,7 @@ export function EdaMock(props: EdaMockProps) {
           </span>
         </div>
       )}
-      <nav className="l05-menubar" ref={regionRef('menu')} data-region="menu">
+      <nav className="l05-menubar" ref={regionRef('menu')} data-region="menu" data-menu-zone>
         <span className="l05-appmark" aria-hidden>
           <svg viewBox="0 0 16 16" width="15" height="15">
             <defs>
@@ -800,7 +800,7 @@ export function EdaMock(props: EdaMockProps) {
             >
               {name}
             </button>
-            {menu === name && (
+            {menu === name && !compact && (
               <div className="l05-drop" role="menu">
                 {items.map((it) => (
                   <div key={it.label} className="l05-drop__wrap" onPointerEnter={() => setSub(it.sub ? it.label : null)}>
@@ -825,6 +825,29 @@ export function EdaMock(props: EdaMockProps) {
           </div>
         ))}
       </nav>
+      {compact && menu && menuData[menu] && (
+        <div className="l05-drop l05-drop--sheet" role="menu" data-menu-zone>
+          <div className="l05-drop__head mono">{menu}</div>
+          {menuData[menu].map((it) => (
+            <div key={it.label}>
+              <button className={`l05-drop__item ${it.action ? 'is-live' : ''}`} role="menuitem" onClick={() => (it.sub ? setSub(sub === it.label ? null : it.label) : runMenu(it))}>
+                <span>{it.label}</span>
+                {it.keys && <span className="l05-drop__keys mono">{it.keys}</span>}
+                {it.sub && <Ico n="chev" size={11} />}
+              </button>
+              {it.sub && sub === it.label && (
+                <div className="l05-drop__subs">
+                  {it.sub.map((x) => (
+                    <button key={x} className="l05-drop__item" onClick={() => runMenu(it, x)}>
+                      {x}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
       {toolbar}
       <div className="l05-main">
         {!compact && left}
@@ -845,6 +868,7 @@ export function EdaMock(props: EdaMockProps) {
           </div>
         </div>
         {!compact && right}
+        {compact && (props.leftOpen || props.rightOpen) && <div className="l05-scrim" onClick={() => set({ leftOpen: false, rightOpen: false })} aria-hidden />}
         {compact && props.leftOpen && <div className="l05-drawer l05-drawer--l">{left}</div>}
         {compact && props.rightOpen && <div className="l05-drawer l05-drawer--r">{right}</div>}
       </div>

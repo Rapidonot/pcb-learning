@@ -117,6 +117,8 @@ export interface Saved {
   doc: BoardDoc
   viewed3d: boolean
   prefs: Prefs
+  /** the last DRC on this exact board passed (re-checked on load, never trusted blindly) */
+  drcClean?: boolean
 }
 
 const isNum = (n: unknown) => typeof n === 'number' && Number.isFinite(n)
@@ -148,7 +150,7 @@ export function loadSaved(): Saved | null {
     if (parsed.v !== 1) return null
     const doc = sanitizeDoc(parsed.doc)
     if (!doc) return null
-    return { v: 1, doc, viewed3d: !!parsed.viewed3d, prefs: { ...defaultPrefs, ...(parsed.prefs ?? {}) } }
+    return { v: 1, doc, viewed3d: !!parsed.viewed3d, prefs: { ...defaultPrefs, ...(parsed.prefs ?? {}) }, drcClean: !!parsed.drcClean }
   } catch {
     return null
   }

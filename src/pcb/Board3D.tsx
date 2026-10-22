@@ -186,6 +186,18 @@ function Parts({ doc, lift, blink }: { doc: BoardDoc; lift: number; blink: boole
 /* Camera helpers                                                      */
 /* ------------------------------------------------------------------ */
 
+/** Keeps the whole board in frame for the perspective camera, even in tall, narrow containers. */
+function FitPersp({ pos }: { pos: [number, number, number] }) {
+  const { size, camera } = useThree()
+  useEffect(() => {
+    const aspect = size.width / size.height
+    const k = aspect < 1.25 ? 1.25 / aspect : 1
+    camera.position.set(pos[0] * k, pos[1] * k, pos[2] * k)
+    camera.updateProjectionMatrix()
+  }, [size.width, size.height, camera, pos[0], pos[1], pos[2]]) // eslint-disable-line react-hooks/exhaustive-deps
+  return null
+}
+
 function FitOrtho({ span, dir }: { span: number; dir: [number, number, number] }) {
   const { size } = useThree()
   const zoom = Math.min(size.width, size.height) / (span * 1.22)
@@ -281,7 +293,7 @@ export function Board3D({
         {art('botOrm', 16, <OrmArt doc={doc} conn={conn} side="bottom" />)}
       </div>
       <Canvas
-        shadows
+        shadows={{ type: THREE.PCFShadowMap }}
         dpr={[1, low ? 1.5 : 2]}
         gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
         onCreated={({ gl }) => {
@@ -289,7 +301,7 @@ export function Board3D({
           gl.toneMappingExposure = 0.92
         }}
       >
-        {camera === 'ortho' ? <FitOrtho span={span} dir={dir} /> : <PerspectiveCamera makeDefault position={camPos} fov={32} near={0.5} far={1000} />}
+        {camera === 'ortho' ? <FitOrtho span={span} dir={dir} /> : <><PerspectiveCamera makeDefault position={camPos} fov={32} near={0.5} far={1000} /><FitPersp pos={camPos} /></>}
         <StudioEnvironment intensity={0.42} />
         <ambientLight intensity={0.12} />
         <directionalLight

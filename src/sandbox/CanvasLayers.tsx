@@ -378,6 +378,27 @@ function Measure({ a, b, px }: { a: Vec; b: Vec; px: number }) {
   )
 }
 
+/** While dragging, pours are drawn as light outlines (cheap) and refilled on release, like EasyEDA's rebuild. */
+export const PourOutlines = memo(function PourOutlines({ doc, activeLayer }: { doc: BoardDoc; activeLayer: Layer }) {
+  const { px } = useView()
+  return (
+    <g style={{ pointerEvents: 'none' }}>
+      {doc.pours.map((p) => (
+        <polygon
+          key={p.id}
+          points={pts(p.pts)}
+          fill={layerColor(p.layer)}
+          fillOpacity={p.layer === activeLayer ? 0.12 : 0.06}
+          stroke={layerColor(p.layer)}
+          strokeOpacity={0.6}
+          strokeWidth={px * 1.2}
+          strokeDasharray={`${px * 6} ${px * 4}`}
+        />
+      ))}
+    </g>
+  )
+})
+
 /** Small helper for the photo view: draw nothing on top but keep a stable child. */
 export function PartsBinLabel({ doc }: { doc: BoardDoc }) {
   const { px } = useView()

@@ -175,6 +175,93 @@ function ViaTypes() {
   )
 }
 
+/** Side cut of an SMD pad with a part on it: via beside the pad (good) or inside it (solder drains away). */
+function ViaInPad({ inPad }: { inPad: boolean }) {
+  const p = inPad ? 'vip1' : 'vip0'
+  const top = 0.7
+  const core = 1.6
+  const cu = 0.07
+  const padX0 = 0.7
+  const padX1 = 2.5
+  const viaX = inPad ? (padX0 + padX1) / 2 : 3.35
+  const hole = 0.3
+  const plate = 0.035
+  const ring = 0.6
+  const solderTop = inPad ? top - cu - 0.1 : top - cu - 0.2
+  return (
+    <svg viewBox="0 0 4.2 2.6" role="img" aria-label={inPad ? 'A via inside a pad: solder drains down the hole' : 'A via beside the pad, joined by a short track'} style={{ display: 'block', width: '100%', height: 'auto', marginBottom: 10 }}>
+      <SectionDefs p={p} />
+      <defs>
+        <linearGradient id={`${p}-sol`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#ffffff" />
+          <stop offset="0.45" stopColor="#c9ced4" />
+          <stop offset="1" stopColor="#8e959d" />
+        </linearGradient>
+        <linearGradient id={`${p}-cap`} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="#8f949a" />
+          <stop offset="0.4" stopColor="#eef1f4" />
+          <stop offset="1" stopColor="#9da3a9" />
+        </linearGradient>
+      </defs>
+      {/* FR-4 with the drilled hole */}
+      <path d={`M 0 ${top} H ${viaX - hole / 2 - plate} V ${top + core} H 0 Z M ${viaX + hole / 2 + plate} ${top} H 4.2 V ${top + core} H ${viaX + hole / 2 + plate} Z`} fill={`url(#${p}-weave)`} filter={`url(#${p}-shadow)`} />
+      {/* barrel */}
+      <rect x={viaX - hole / 2} y={top - cu} width={hole} height={core + cu * 2} fill={`url(#${p}-tube)`} />
+      <rect x={viaX - hole / 2 - plate} y={top - cu} width={plate} height={core + cu * 2} fill={`url(#${p}-plateL)`} />
+      <rect x={viaX + hole / 2} y={top - cu} width={plate} height={core + cu * 2} fill={`url(#${p}-plateR)`} />
+      {/* bottom ring */}
+      <rect x={viaX - ring / 2} y={top + core} width={ring} height={cu} fill={`url(#${p}-cu)`} />
+      {/* pad (and, when beside, a short track + via ring) */}
+      {inPad ? (
+        <>
+          <rect x={padX0} y={top - cu} width={viaX - hole / 2 - plate - padX0} height={cu} fill={`url(#${p}-cu)`} />
+          <rect x={viaX + hole / 2 + plate} y={top - cu} width={padX1 - viaX - hole / 2 - plate} height={cu} fill={`url(#${p}-cu)`} />
+        </>
+      ) : (
+        <>
+          <rect x={padX0} y={top - cu} width={padX1 - padX0} height={cu} fill={`url(#${p}-cu)`} />
+          <rect x={padX1} y={top - cu} width={viaX - padX1} height={cu} fill={`url(#${p}-cu)`} opacity={0.9} />
+          <rect x={viaX - ring / 2} y={top - cu} width={(ring - hole) / 2 - plate} height={cu} fill={`url(#${p}-cu)`} />
+          <rect x={viaX + hole / 2 + plate} y={top - cu} width={(ring - hole) / 2 - plate} height={cu} fill={`url(#${p}-cu)`} />
+          {/* mask over the track */}
+          <rect x={padX1 + 0.05} y={top - cu - 0.05} width={viaX - ring / 2 - padX1 - 0.1} height={0.05} fill={`url(#${p}-mask)`} />
+        </>
+      )}
+      {/* solder: a fillet from pad up to the end cap; in-pad loses some down the barrel */}
+      <path
+        d={inPad
+          ? `M ${padX0 + 0.05} ${top - cu} Q ${padX0 + 0.25} ${solderTop + 0.1} ${padX0 + 0.55} ${solderTop - 0.05} L ${padX0 + 0.55} ${top - cu} Z`
+          : `M ${padX0 + 0.02} ${top - cu} Q ${padX0 + 0.1} ${solderTop - 0.15} ${padX0 + 0.55} ${solderTop - 0.32} L ${padX1 - 0.05} ${solderTop + 0.02} L ${padX1 - 0.02} ${top - cu} Z`}
+        fill={`url(#${p}-sol)`}
+      />
+      {inPad && (
+        <>
+          <rect x={viaX - hole / 2} y={top - cu} width={hole} height={0.75} fill={`url(#${p}-sol)`} />
+          <path d={`M ${viaX - hole / 2} ${top - cu + 0.75} q ${hole / 2} 0.12 ${hole} 0`} fill={`url(#${p}-sol)`} />
+          <rect x={viaX + hole / 2 + plate} y={solderTop + 0.12} width={padX1 - viaX - hole / 2 - plate - 0.05} height={top - cu - solderTop - 0.12} fill={`url(#${p}-sol)`} opacity={0.8} />
+        </>
+      )}
+      {/* the part's end cap sitting on the solder */}
+      <rect x={padX0 + 0.55} y={solderTop - 0.45} width={1.4} height={0.45 - (inPad ? 0.1 : 0)} rx={0.04} fill={`url(#${p}-cap)`} filter={`url(#${p}-shadow)`} />
+      <rect x={padX0 + 1.95} y={solderTop - 0.45} width={1.6} height={0.45 - (inPad ? 0.1 : 0)} fill="#2a2a2e" opacity={0.92} />
+      <g fontFamily="var(--font-mono)" fontSize={0.13} fontWeight={600} letterSpacing={0.015} fill="var(--ink-2)">
+        {inPad ? (
+          <>
+            <text x={viaX + 0.28} y={top + 0.62}>SOLDER WICKS</text>
+            <text x={viaX + 0.28} y={top + 0.8}>DOWN THE HOLE</text>
+            <line x1={viaX + 0.25} y1={top + 0.58} x2={viaX + 0.05} y2={top + 0.4} stroke="var(--ink-3)" strokeWidth={0.012} />
+          </>
+        ) : (
+          <>
+            <text x={viaX - 0.2} y={0.32} textAnchor="middle">VIA</text>
+            <text x={padX0 + 0.1} y={0.32}>FULL FILLET</text>
+          </>
+        )}
+      </g>
+    </svg>
+  )
+}
+
 function RoutedBoard() {
   const doc = useMemo(() => stages.routed(), [])
   return (
@@ -313,8 +400,19 @@ function Article() {
 
       <h2>Don't put vias in SMD pads</h2>
       <Compare
-        left={<>Put the via next to the pad and join it with a short track. Solder stays on the pad where it belongs.</>}
-        right={<>A via inside a surface-mount pad is an open hole. Molten solder can wick down the barrel and leave a weak or dry joint.</>}
+        left={
+          <>
+            <ViaInPad inPad={false} />
+            Put the via next to the pad and join it with a short track. Solder stays on the pad where it belongs.
+          </>
+        }
+        right={
+          <>
+            <ViaInPad inPad />
+            A via inside a surface-mount pad is an open hole. Molten solder can wick down the barrel and leave a weak or dry
+            joint.
+          </>
+        }
         leftLabel="Do"
         rightLabel="Avoid as a beginner"
       />

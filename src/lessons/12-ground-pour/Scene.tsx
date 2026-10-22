@@ -155,6 +155,8 @@ export function Scene() {
   }
   const setNet = (net: string) => {
     update({ net })
+    // on phones, get the sheet out of the way so the flood is visible
+    if (narrow && net) setTimeout(() => setPanelOpen(false), 450)
     if (autoRebuild && net) animateSweep()
     if (net && net !== 'GND') setToast(`A ${net} pour would only connect ${net} pads. Ground is the usual choice.`)
   }
@@ -540,25 +542,28 @@ function InspectorBody({
   onThermals: (v: boolean) => void
   onRun: (r: HeatRun) => void
 }) {
-  const spec: PourSpec =
-    pour && pour.net === 'GND'
-      ? pour
-      : {
-          id: 'demo',
-          net: 'GND',
-          layer: 'top',
-          clearance: pour?.clearance ?? 0.3,
-          thermals: pour ? pour.thermals : demoThermals,
-          spoke: pour?.spoke ?? 0.35,
-          pts: [
-            [INSET, INSET],
-            [doc.w - INSET, INSET],
-            [doc.w - INSET, doc.h - INSET],
-            [INSET, doc.h - INSET],
-          ],
-        }
+  const spec = useMemo<PourSpec>(
+    () =>
+      pour && pour.net === 'GND'
+        ? pour
+        : {
+            id: 'demo',
+            net: 'GND',
+            layer: 'top',
+            clearance: pour?.clearance ?? 0.3,
+            thermals: pour ? pour.thermals : demoThermals,
+            spoke: pour?.spoke ?? 0.35,
+            pts: [
+              [INSET, INSET],
+              [doc.w - INSET, INSET],
+              [doc.w - INSET, doc.h - INSET],
+              [INSET, doc.h - INSET],
+            ],
+          },
+    [pour, demoThermals, doc.w, doc.h],
+  )
   const conn = useMemo(() => analyze({ ...doc, pours: [] }), [doc])
-  const pads = conn.pads.filter((p) => p.net === 'GND' && p.layers.includes(spec.layer) && ['J1.2', 'C2.2', 'U1.1'].includes(p.key))
+  const pads = useMemo(() => conn.pads.filter((p) => p.net === 'GND' && p.layers.includes(spec.layer) && ['J1.2', 'C2.2', 'U1.1'].includes(p.key)), [conn, spec.layer])
   const key = pads.some((p) => p.key === padKey) ? padKey : pads[0]?.key
   return <ThermalInspector doc={doc} conn={conn} pour={spec} pads={pads} padKey={key} onPad={setPadKey} onThermals={onThermals} onRun={onRun} />
 }

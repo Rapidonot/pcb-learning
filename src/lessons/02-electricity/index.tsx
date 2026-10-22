@@ -102,19 +102,19 @@ function LedFigure() {
         <path d="M 40 40 A 30 30 0 0 1 100 40 L 100 108 L 40 108 Z" fill="url(#l02f-dome)" opacity={0.92} />
         <rect x={34} y={106} width={72} height={9} rx={2} fill="#c9342a" />
         <rect x={34} y={106} width={6} height={9} fill="#8f2119" />
-        <path d="M 58 115 V 214" stroke="#9aa0a6" strokeWidth={3.5} />
-        <path d="M 82 115 V 190" stroke="#9aa0a6" strokeWidth={3.5} />
+        <path d="M 58 115 V 190" stroke="#9aa0a6" strokeWidth={3.5} />
+        <path d="M 82 115 V 214" stroke="#9aa0a6" strokeWidth={3.5} />
         {/* inside: anvil and post */}
         <path d="M 52 108 V 70 L 66 64 V 108 Z" fill="#4a1a14" opacity={0.6} />
         <path d="M 76 108 V 76 H 84 V 108 Z" fill="#4a1a14" opacity={0.6} />
         <ellipse cx={58} cy={38} rx={8} ry={13} fill="#fff" opacity={0.45} transform="rotate(20 58 38)" />
         <g fontFamily={MONO} fontSize={11} fontWeight={600}>
-          <line x1={92} y1={206} x2={140} y2={206} stroke="var(--ink-3)" />
+          <line x1={82} y1={206} x2={140} y2={206} stroke="var(--ink-3)" />
           <text x={146} y={202} fill="var(--ink)">ANODE (+)</text>
           <text x={146} y={216} fill="var(--ink-3)" fontWeight={400}>long leg</text>
-          <line x1={58} y1={196} x2={-6} y2={196} stroke="var(--ink-3)" />
-          <text x={-10} y={192} textAnchor="end" fill="var(--ink)">CATHODE (−)</text>
-          <text x={-10} y={206} textAnchor="end" fill="var(--ink-3)" fontWeight={400}>short leg</text>
+          <line x1={58} y1={182} x2={-6} y2={182} stroke="var(--ink-3)" />
+          <text x={-10} y={178} textAnchor="end" fill="var(--ink)">CATHODE (−)</text>
+          <text x={-10} y={192} textAnchor="end" fill="var(--ink-3)" fontWeight={400}>short leg</text>
           <line x1={36} y1={110} x2={-6} y2={110} stroke="var(--ink-3)" />
           <text x={-10} y={106} textAnchor="end" fill="var(--ink)">FLAT EDGE</text>
           <text x={-10} y={120} textAnchor="end" fill="var(--ink-3)" fontWeight={400}>cathode side</text>

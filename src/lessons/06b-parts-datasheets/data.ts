@@ -112,18 +112,19 @@ export interface PinInfo {
   num: number
   name: string
   type: 'Power' | 'Input' | 'Output' | 'I/O'
+  short: string
   desc: string
 }
 
 export const PINS: PinInfo[] = [
-  { num: 1, name: 'GND', type: 'Power', desc: 'Ground, 0 V. Every current returns here.' },
-  { num: 2, name: 'TRIG', type: 'Input', desc: 'Trigger. When it falls below 1/3 of VCC, the output switches high and a new timing cycle starts.' },
-  { num: 3, name: 'OUT', type: 'Output', desc: 'Output. Swings between about 0 V and close to VCC. In Blinky it drives the LED through R3.' },
-  { num: 4, name: 'RESET', type: 'Input', desc: 'Reset, active low. Pull it to 0 V to stop the timer. Tie it to VCC when you do not use it (Blinky does).' },
-  { num: 5, name: 'CONT', type: 'I/O', desc: 'Control voltage. Gives access to the internal 2/3 VCC reference. Usually just a 10 nF capacitor to ground to keep it quiet (C3 in Blinky).' },
-  { num: 6, name: 'THRES', type: 'Input', desc: 'Threshold. When it rises above 2/3 of VCC, the output switches low and the discharge pin turns on.' },
-  { num: 7, name: 'DISCH', type: 'Output', desc: 'Discharge. An internal switch to ground that empties the timing capacitor (through R2 in Blinky).' },
-  { num: 8, name: 'VCC', type: 'Power', desc: 'Positive supply. This is where the +5 V goes, with a 100 nF decoupling capacitor right next to it (C2).' },
+  { num: 1, short: 'Ground', name: 'GND', type: 'Power', desc: 'Ground, 0 V. Every current returns here.' },
+  { num: 2, short: 'Starts a cycle below 1/3 VCC', name: 'TRIG', type: 'Input', desc: 'Trigger. When it falls below 1/3 of VCC, the output switches high and a new timing cycle starts.' },
+  { num: 3, short: 'Timer output', name: 'OUT', type: 'Output', desc: 'Output. Swings between about 0 V and close to VCC. In Blinky it drives the LED through R3.' },
+  { num: 4, short: 'Active-low reset', name: 'RESET', type: 'Input', desc: 'Reset, active low. Pull it to 0 V to stop the timer. Tie it to VCC when you do not use it (Blinky does).' },
+  { num: 5, short: 'Access to 2/3 VCC reference', name: 'CONT', type: 'I/O', desc: 'Control voltage. Gives access to the internal 2/3 VCC reference. Usually just a 10 nF capacitor to ground to keep it quiet (C3 in Blinky).' },
+  { num: 6, short: 'Ends a cycle above 2/3 VCC', name: 'THRES', type: 'Input', desc: 'Threshold. When it rises above 2/3 of VCC, the output switches low and the discharge pin turns on.' },
+  { num: 7, short: 'Discharges the timing capacitor', name: 'DISCH', type: 'Output', desc: 'Discharge. An internal switch to ground that empties the timing capacitor (through R2 in Blinky).' },
+  { num: 8, short: 'Supply voltage', name: 'VCC', type: 'Power', desc: 'Positive supply. This is where the +5 V goes, with a 100 nF decoupling capacitor right next to it (C2).' },
 ]
 
 /* ------------------------------------------------------------------ */

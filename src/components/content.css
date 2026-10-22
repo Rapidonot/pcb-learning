@@ -246,13 +246,15 @@
   max-width: calc(100% - 24px);
   overflow-x: auto;
 }
-.scene-toolbar .btn {
-  height: 32px;
+.scene-toolbar .btn:not(.btn--accent):not(.btn--primary) {
   border-color: transparent;
   box-shadow: none;
   background: transparent;
 }
-.scene-toolbar .btn:hover {
+.scene-toolbar .btn {
+  height: 32px;
+}
+.scene-toolbar .btn:not(.btn--accent):not(.btn--primary):hover {
   background: var(--paper-2);
 }
 .scene-toolbar .btn.is-active {

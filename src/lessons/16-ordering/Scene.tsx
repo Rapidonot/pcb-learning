@@ -175,7 +175,7 @@ export function Scene() {
   const preview = (
     <div className="l16-preview">
       <Suspense fallback={<div className="l16-preview__load"><div className="spinner" /></div>}>
-        <Board3D doc={PREVIEW_DOC} maskColor={o.mask} finish={o.finish === 'enig' ? 'enig' : 'hasl'} showParts={o.assembly} blink={o.assembly} quality={wide ? 'high' : 'low'} />
+        {!timeline && <Board3D doc={PREVIEW_DOC} maskColor={o.mask} finish={o.finish === 'enig' ? 'enig' : 'hasl'} showParts={o.assembly} blink={o.assembly} camera="ortho" quality={wide ? 'high' : 'low'} />}
       </Suspense>
       <div className="l16-preview__tag mono">
         Live preview · {MASK_NAMES[o.mask]} / {o.finish === 'enig' ? 'ENIG gold' : 'HASL silver'} pads
@@ -368,7 +368,7 @@ export function Scene() {
             <IconReset size={14} /> Defaults
           </Button>
           <span className="scene-toolbar__sep" />
-          <Button size="sm" variant="accent" onClick={() => setTimeline(true)}>
+          <Button size="sm" variant="accent" className="l16-tbgo" onClick={() => setTimeline(true)}>
             <IconBox size={14} /> Place order
           </Button>
         </SceneToolbar>
@@ -461,18 +461,18 @@ function Assembly({ tab, setTab }: { tab: 'bom' | 'cpl'; setTab: (t: 'bom' | 'cp
               <thead>
                 <tr>
                   <th>Designator</th>
-                  <th>Mid X</th>
-                  <th>Mid Y</th>
+                  <th>X (mm)</th>
+                  <th>Y (mm)</th>
                   <th>Layer</th>
-                  <th>Rotation</th>
+                  <th>Rot.</th>
                 </tr>
               </thead>
               <tbody>
                 {cpl.map((l) => (
                   <tr key={l.ref} onPointerEnter={() => setHover(l.ref)} onPointerLeave={() => setHover(null)} onClick={() => setHover(l.ref)} className={`${hover === l.ref ? 'is-hl' : ''} ${l.smd ? '' : 'is-tht'}`}>
                     <td className="mono">{l.ref}</td>
-                    <td className="mono">{l.x.toFixed(2)}mm</td>
-                    <td className="mono">{l.y.toFixed(2)}mm</td>
+                    <td className="mono">{l.x.toFixed(2)}</td>
+                    <td className="mono">{l.y.toFixed(2)}</td>
                     <td>{l.layer}</td>
                     <td className="mono">{l.rot}°</td>
                   </tr>

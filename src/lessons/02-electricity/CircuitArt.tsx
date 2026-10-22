@@ -197,6 +197,37 @@ export function CircuitArt(p: ArtProps) {
           <stop offset="0" stopColor={MASK_HI} />
           <stop offset="1" stopColor={MASK} />
         </linearGradient>
+        <linearGradient id="l02-supL" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor={water ? '#4d88ba' : '#41454b'} />
+          <stop offset="1" stopColor={water ? '#356c9b' : '#2b2e33'} />
+        </linearGradient>
+        <linearGradient id="l02-supR" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor={water ? '#3a6f9c' : '#2f3237'} />
+          <stop offset="1" stopColor={water ? '#285680' : '#1d1f23'} />
+        </linearGradient>
+        <linearGradient id="l02-supT" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor={water ? '#78acd6' : '#5a5f66'} />
+          <stop offset="1" stopColor={water ? '#5590c0' : '#40444a'} />
+        </linearGradient>
+        <linearGradient id="l02-plT" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#4a4a50" />
+          <stop offset="1" stopColor="#2a2a2e" />
+        </linearGradient>
+        <linearGradient id="l02-plL" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#303035" />
+          <stop offset="1" stopColor="#1c1c1f" />
+        </linearGradient>
+        <radialGradient id="l02-solder" cx="0.35" cy="0.3" r="0.75">
+          <stop offset="0" stopColor="#ffffff" />
+          <stop offset="0.35" stopColor="#dfe3e8" />
+          <stop offset="0.8" stopColor="#9aa1a9" />
+          <stop offset="1" stopColor="#7c838b" />
+        </radialGradient>
+        <linearGradient id="l02-gold" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="#9c6f16" />
+          <stop offset="0.45" stopColor="#ffe39a" />
+          <stop offset="1" stopColor="#a87a1e" />
+        </linearGradient>
         <filter id="l02-soft" x="-30%" y="-30%" width="160%" height="160%">
           <feGaussianBlur stdDeviation="3.2" />
         </filter>
@@ -260,6 +291,20 @@ export function CircuitArt(p: ArtProps) {
         })}
       </g>
 
+      {/* solder joints around the through-hole leads */}
+      <g className="l02-fade" opacity={water ? 0 : 1}>
+        {[[R1.a, RY], [R1.b, RY], [D1.x, D1.a], [D1.x, D1.k]].map(([x, y], i) => {
+          const [cx, cy] = iso(x, y)
+          const e = ellR(2.5)
+          return (
+            <g key={i}>
+              <ellipse cx={cx} cy={cy - 0.4} rx={e.rx} ry={e.ry + 0.6} fill="url(#l02-solder)" />
+              <ellipse cx={cx - 0.8} cy={cy - 0.9} rx={0.9} ry={0.45} fill="#fff" opacity={0.8} />
+            </g>
+          )
+        })}
+      </g>
+
       {/* silkscreen */}
       <g fill={SILK} fontFamily="IBM Plex Mono, monospace" fontWeight={600} opacity={water ? 0.35 : 0.95} className="l02-fade">
         <g transform={faceTop(R1.body0 + 2, RY + 7, 0)}>
@@ -275,10 +320,10 @@ export function CircuitArt(p: ArtProps) {
         <g transform={faceTop(20, J1.p1[1] - 5, 0)}>
           <text fontSize={4.2}>J1</text>
         </g>
-        <g transform={faceTop(18, J1.p1[1] + 1.6, 0)}>
+        <g transform={faceTop(21, J1.p1[1] + 1.6, 0)}>
           <text fontSize={3.2}>+V</text>
         </g>
-        <g transform={faceTop(18, J1.p2[1] + 1.6, 0)}>
+        <g transform={faceTop(19, J1.p2[1] + 4.4, 0)}>
           <text fontSize={3.2}>GND</text>
         </g>
         <g transform={faceTop(58, BD - 2.6, 0)}>
@@ -339,6 +384,12 @@ export function CircuitArt(p: ArtProps) {
         ))}
       </g>
 
+      {/* contact shadows */}
+      <g opacity={0.35} filter="url(#l02-blur1)" style={{ pointerEvents: 'none' }}>
+        <polyline points={poly([[R1.body0, RY + 1.5, 0], [R1.body1, RY + 1.5, 0]])} stroke="#0c2416" strokeWidth={4} strokeLinecap="round" fill="none" />
+        {!water && <ellipse cx={iso(D1.x + 1, D1.y + 1)[0]} cy={iso(D1.x + 1, D1.y + 1)[1]} {...ellRxy(6)} fill="#0c2416" />}
+      </g>
+
       {/* ---------- R1 ---------- */}
       <g className="l02-fade" opacity={water ? 0 : 1}>
         <polyline points={poly([[R1.a, RY, 0], [R1.a, RY, R1.z], [R1.body0, RY, R1.z]])} fill="none" stroke={METAL} strokeWidth={1.1} strokeLinejoin="round" />
@@ -362,8 +413,22 @@ export function CircuitArt(p: ArtProps) {
       </g>
 
       {/* ---------- J1 connector ---------- */}
-      <IsoBox x={8} y={J1.p1[1] - 4} z={0} w={8} d={16} h={3} top="#2d2d30" left="#232326" right="#1b1b1d" />
-      <IsoBox x={8.6} y={J1.p1[1] - 3.4} z={3} w={6.8} d={14.8} h={8.5} top="#3a3a3e" left="#2b2b2f" right="#202023" />
+      <IsoBox x={8} y={J1.p1[1] - 4} z={0} w={8} d={16} h={3} top="#3a3a3e" left="url(#l02-plL)" right="#1b1b1d" />
+      {/* gold pins visible between base and plug */}
+      {[J1.p1[1], J1.p2[1]].map((y) => (
+        <line key={y} {...seg([12.6, y + 0.6, 3], [12.6, y + 0.6, 4.2])} stroke="url(#l02-gold)" strokeWidth={1.4} />
+      ))}
+      <IsoBox x={8.6} y={J1.p1[1] - 3.4} z={4} w={6.8} d={14.8} h={7.5} top="url(#l02-plT)" left="url(#l02-plL)" right="#1d1d20" />
+      {/* plug latch + slot detail */}
+      <g transform={faceLeft(8.6, J1.p1[1] + 11.4, 11.5)}>
+        <rect x={1.6} y={1.4} width={3.6} height={2.2} rx={0.4} fill="#141416" />
+        <line x1={0.4} y1={0.3} x2={6.4} y2={0.3} stroke="#fff" strokeOpacity={0.15} strokeWidth={0.3} />
+      </g>
+      <g transform={faceTop(8.6, J1.p1[1] - 3.4, 11.5)}>
+        {[J1.p1[1], J1.p2[1]].map((y) => (
+          <rect key={y} x={2.1} y={y - J1.p1[1] + 1.9} width={2.6} height={3} rx={0.5} fill="#121214" />
+        ))}
+      </g>
 
       {/* ---------- D1 (LED) or valve ---------- */}
       <g className="l02-fade" opacity={water ? 0 : 1}>
@@ -375,9 +440,24 @@ export function CircuitArt(p: ArtProps) {
 
       {/* ---------- supply / pump ---------- */}
       <g>
-        <polygon points={sup.left} fill={water ? '#3f78a8' : '#34373c'} className="l02-fill" />
-        <polygon points={sup.right} fill={water ? '#2f5f88' : '#26282c'} className="l02-fill" />
-        <polygon points={sup.top} fill={water ? '#5b93c2' : '#44484e'} className="l02-fill" />
+        {/* rubber feet */}
+        {[[SUP.x + 3, SUP.y + SUP.d - 3], [SUP.x + SUP.w - 3, SUP.y + SUP.d - 3], [SUP.x + SUP.w - 3, SUP.y + 3]].map(([fx, fy], i) => {
+          const [cx, cy] = iso(fx, fy, SUP.z)
+          return <ellipse key={i} cx={cx} cy={cy + 0.6} rx={2.4} ry={1.2} fill="#141416" />
+        })}
+        <polygon points={sup.left} fill="url(#l02-supL)" stroke="rgba(0,0,0,0.35)" strokeWidth={0.3} strokeLinejoin="round" />
+        <polygon points={sup.right} fill="url(#l02-supR)" stroke="rgba(0,0,0,0.35)" strokeWidth={0.3} strokeLinejoin="round" />
+        <polygon points={sup.top} fill="url(#l02-supT)" stroke="rgba(0,0,0,0.25)" strokeWidth={0.3} strokeLinejoin="round" />
+        {/* vent slots on the lid */}
+        <g transform={faceTop(SUP.x + 4, SUP.y + 3, SUP.z + SUP.h)} opacity={0.55}>
+          {[0, 1, 2, 3, 4].map((i) => (
+            <rect key={i} x={i * 2.6} y={0} width={1.2} height={9} rx={0.6} fill="#1a1b1e" />
+          ))}
+        </g>
+        {/* front bezel */}
+        <g transform={faceLeft(SUP.x, SUP.y + SUP.d, SUP.z + SUP.h)}>
+          <rect x={1} y={1} width={SUP.w - 2} height={SUP.h - 2} rx={1.2} fill="none" stroke="#fff" strokeOpacity={0.08} strokeWidth={0.5} />
+        </g>
         {/* edge highlight */}
         <polyline points={pts([iso(SUP.x, SUP.y + SUP.d, SUP.z + SUP.h), iso(SUP.x + SUP.w, SUP.y + SUP.d, SUP.z + SUP.h), iso(SUP.x + SUP.w, SUP.y, SUP.z + SUP.h)])} fill="none" stroke="#fff" strokeOpacity={0.18} strokeWidth={0.6} />
         {/* front-left face: display or gauge */}
@@ -542,10 +622,11 @@ function silkCircle(cx: number, cy: number, r: number, flatSide: 'k') {
 function IsoBox({ x, y, z, w, d, h, top, left, right }: { x: number; y: number; z: number; w: number; d: number; h: number; top: string; left: string; right: string }) {
   const b = box(x, y, z, w, d, h)
   return (
-    <g>
+    <g stroke="rgba(0,0,0,0.4)" strokeWidth={0.25} strokeLinejoin="round">
       <polygon points={b.left} fill={left} />
       <polygon points={b.right} fill={right} />
       <polygon points={b.top} fill={top} />
+      <polyline points={pts([iso(x, y + d, z + h), iso(x + w, y + d, z + h), iso(x + w, y, z + h)])} fill="none" stroke="#fff" strokeOpacity={0.16} strokeWidth={0.35} />
     </g>
   )
 }

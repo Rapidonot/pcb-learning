@@ -285,6 +285,7 @@
 .l02-meter__pw b {
   color: var(--ink);
   letter-spacing: 0;
+  text-transform: none;
 }
 .l02-pwbar {
   height: 5px;

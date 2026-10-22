@@ -176,8 +176,8 @@ function spec(id: PartId): Spec {
         model: <Led5mm fp={fp('LED-5MM')} on={false} />,
         height: 8.6,
         marks: [
-          { at: [-2.9, 2.2, 0], text: 'flat edge = cathode (−)' },
-          { at: [-1.27, 0.1, 0], text: 'square pad = cathode' },
+          { at: [-3.0, 2.0, 0], text: 'cathode (−) side' },
+          { at: [3.0, 2.0, 0], text: 'anode (+) side' },
         ],
       }
     case 'diode':
@@ -254,6 +254,8 @@ function Fit({ span }: { span: number }) {
   return <OrthographicCamera makeDefault zoom={zoom} near={-200} far={400} position={[dir.x * d, dir.y * d, dir.z * d]} />
 }
 
+const reducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+
 export default function Viewer3D({ id, marks }: { id: PartId; marks: boolean }) {
   const s = spec(id)
   const [bw, bd] = s.board
@@ -298,7 +300,7 @@ export default function Viewer3D({ id, marks }: { id: PartId; marks: boolean }) 
             </Html>
           ))}
       </group>
-      <OrbitControls makeDefault autoRotate={!marks} autoRotateSpeed={1.2} enableZoom={false} enablePan={false} enableDamping />
+      <OrbitControls makeDefault autoRotate={!marks && !reducedMotion} autoRotateSpeed={1.2} enableZoom={false} enablePan={false} enableDamping />
     </Canvas>
   )
 }

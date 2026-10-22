@@ -91,6 +91,7 @@
 }
 .l05-stagewrap {
   position: relative;
+  z-index: 0;
   flex: 1 1 auto;
   min-height: 0;
   padding: 0 14px 14px;
@@ -181,6 +182,7 @@
   border-bottom: 1px solid var(--ui-line);
 }
 .l05-appmark {
+  flex: none;
   display: grid;
   place-items: center;
   width: 24px;
@@ -189,6 +191,7 @@
 }
 .l05-menu {
   position: relative;
+  flex: none;
 }
 .l05-menu__btn {
   padding: 3px 8px;
@@ -911,7 +914,7 @@ button.l05-results__row.is-on {
   place-items: center;
   background: rgba(30, 34, 40, 0.28);
   backdrop-filter: blur(1.5px);
-  animation: fade-in 0.15s both;
+  animation: l05-fade 0.15s both;
 }
 .l05-dialog {
   width: min(330px, calc(100% - 24px));
@@ -1209,22 +1212,30 @@ button.l05-results__row.is-on {
   overflow-x: auto;
   scrollbar-width: none;
 }
-.l05-win.is-compact .l05-drop {
-  position: fixed;
-  top: auto;
-  left: 12px !important;
-  right: 12px;
-  margin-top: 4px;
+.l05-drop.l05-drop--sheet {
+  position: absolute;
+  top: 30px;
+  left: 8px;
+  right: 8px;
+  height: auto;
+  display: block;
+  overflow: visible;
+  z-index: 30;
+  border-bottom: 1px solid #d4d8de;
 }
-.l05-win.is-compact .l05-drop--sub {
-  position: static;
-  box-shadow: none;
-  border: 0;
-  margin: 0 0 0 10px;
-  padding: 0;
+.l05-drop__head {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ui-ink3);
+  padding: 4px 9px 3px;
+}
+.l05-drop__subs {
+  padding-left: 14px;
 }
 .l05-win.is-compact .l05-bottom.is-open {
-  height: 46%;
+  height: 42%;
+  min-height: 120px;
 }
 .l05-win.is-compact .l05-lib__side {
   width: auto;
@@ -1273,6 +1284,13 @@ button.l05-results__row.is-on {
 .l05-edge--r {
   right: 8px;
 }
+.l05-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 14;
+  background: rgba(20, 24, 30, 0.25);
+  animation: l05-fade 0.2s both;
+}
 .l05-drawer {
   position: absolute;
   z-index: 15;
@@ -1280,7 +1298,7 @@ button.l05-results__row.is-on {
   bottom: 0;
   display: flex;
   box-shadow: 0 0 40px -6px rgba(0, 0, 0, 0.4);
-  animation: fade-in 0.2s both;
+  animation: l05-fade 0.2s both;
 }
 .l05-drawer--l {
   left: 0;
@@ -1335,4 +1353,62 @@ button.l05-results__row.is-on {
   .l05-spot {
     transition: none;
   }
+}
+.l05-anatomy__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  justify-content: center;
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.l05-anatomy__legend b {
+  display: inline-grid;
+  place-items: center;
+  width: 19px;
+  height: 19px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font-size: 10.5px;
+  margin-right: 3px;
+}
+@keyframes l05-fade {
+  from {
+    opacity: 0;
+  }
+}
+.l05-card.is-flow {
+  position: relative;
+  z-index: 12;
+  flex: none;
+  height: 138px;
+  overflow: auto;
+  animation: none;
+  margin: 0 8px 8px;
+  padding: 10px 12px;
+  box-shadow: var(--shadow-1);
+}
+.l05-card.is-flow .l05-card__title {
+  font-size: 18px;
+}
+.l05-card.is-flow .l05-card__body {
+  font-size: 12.5px;
+}
+.l05-card.is-flow .l05-card__try {
+  margin-top: 6px;
+  font-size: 12px;
+}
+.l05-card.is-flow .l05-card__nav {
+  margin-top: 7px;
+}
+.l05-card.is-msg {
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--ink-2);
+  background: var(--paper-2);
+  border-style: dashed;
 }

@@ -260,7 +260,10 @@
     font-size: 15px;
   }
   .toaster {
-    bottom: calc(72px + env(safe-area-inset-bottom));
+    top: 12px;
+    bottom: auto;
     right: 12px;
+    left: 12px;
+    max-width: none;
   }
 }

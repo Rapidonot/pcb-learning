@@ -1020,19 +1020,19 @@
   border: 1px solid var(--line);
 }
 .sbx-tab {
-  flex: 1 1 0;
+  flex: 1 1 auto;
   min-width: 0;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 5px;
   height: 30px;
-  padding: 0 6px;
+  padding: 0 7px;
   border-radius: 7px;
   font-family: var(--font-mono);
   font-size: 10px;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--ink-3);
   transition: all 0.15s;
@@ -2062,7 +2062,7 @@
   .sbx-doc {
     padding: 4px;
   }
-  .sbx-bar .grow {
+  .sbx-bar > .grow {
     display: none;
   }
   .sbx-bar__group {

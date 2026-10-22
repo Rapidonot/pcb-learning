@@ -182,14 +182,15 @@ pre {
   flex-wrap: wrap;
 }
 
+/* uses the individual `translate` property so it composes with any element `transform` */
 @keyframes fade-up {
   from {
     opacity: 0;
-    transform: translateY(8px);
+    translate: 0 8px;
   }
   to {
     opacity: 1;
-    transform: none;
+    translate: 0 0;
   }
 }
 @keyframes pop {

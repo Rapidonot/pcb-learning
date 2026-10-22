@@ -49,6 +49,15 @@ export function Scene() {
     refs.current[id] = el
   }, [])
 
+  // phones start with the library folded away so the canvas has room
+  const foldedOnce = useRef(false)
+  useEffect(() => {
+    if (compact && !foldedOnce.current) {
+      foldedOnce.current = true
+      set({ bottomOpen: false })
+    }
+  }, [compact, set])
+
   // size
   useLayoutEffect(() => {
     const el = rootRef.current
@@ -115,6 +124,7 @@ export function Scene() {
     if (mode !== 'quiz') return
     set({ leftOpen: false, rightOpen: false, bottomOpen: true })
     if (ch?.needsPcb) set({ doc: 'pcb', rightTab: 'layers' })
+    else if (ch?.answer === 'property') set({ rightTab: 'property' })
   }, [mode, q, ch, set])
 
   const startMode = (m: Mode) => {
@@ -171,17 +181,21 @@ export function Scene() {
   const cardW = compact ? size.w - 20 : 290
   const cardStyle = ((): CSSProperties | undefined => {
     if (!cr) return undefined
-    if (compact) return { left: 10, right: 10, bottom: 10, width: 'auto' }
+    if (compact) return cr.y + cr.h / 2 > size.h * 0.55 ? { left: 10, right: 10, top: 96, width: 'auto' } : { left: 10, right: 10, bottom: 10, width: 'auto' }
     const gap = 14
     const estH = 210
     let x: number
     let y = Math.max(54, Math.min(size.h - estH - 10, cr.y + 6))
+    if (cr.h < 60 && cr.w > size.w * 0.5) {
+      // menu bar / toolbar: hang below, at the right, clear of the dropdown menus
+      return { left: size.w - cardW - 26, top: cr.y + cr.h + gap, width: cardW }
+    }
     if (cr.x + cr.w + gap + cardW < size.w - 8) x = cr.x + cr.w + gap
     else if (cr.x - gap - cardW > 8) x = cr.x - gap - cardW
     else {
       // big region: sit inside it, below its top edge, or above it if it's at the bottom
-      x = Math.min(size.w - cardW - 10, Math.max(10, cr.x + cr.w / 2 - cardW / 2))
-      y = cr.h > 260 ? cr.y + 40 : Math.max(54, cr.y - estH - gap)
+      x = cr.h > 200 ? Math.min(size.w - cardW - 10, cr.x + cr.w - cardW - 12) : Math.min(size.w - cardW - 10, Math.max(10, cr.x + cr.w / 2 - cardW / 2))
+      y = cr.h > 200 ? cr.y + 40 : cr.y + cr.h / 2 < size.h / 2 ? cr.y + cr.h + gap : Math.max(54, cr.y - estH - gap)
     }
     return { left: x, top: y, width: cardW }
   })()
@@ -191,12 +205,107 @@ export function Scene() {
   const beaconIds: RegionId[] = TOUR.filter((id) => rectOf(id))
   const beaconPos = (id: RegionId) => {
     const r = rectOf(id)!
+    if (r.w < 140 && r.h < 40) return { left: r.x < size.w / 2 ? r.x + r.w + 4 : r.x - 25, top: r.y + r.h / 2 - 10 }
     if (r.h < 48) return { left: r.x + r.w - 22, top: r.y + r.h / 2 - 10 }
     return { left: r.x + r.w - 30, top: r.y + r.h - 30 }
   }
 
   const info = cardRegion ? regionById(cardRegion) : null
   const tourIdx = TOUR.indexOf(tourRegion)
+
+  const modeMsg = (
+    <>
+          {mode === 'explore' &&
+            (visited.length >= 4 && !visited.includes('layers') && mock.doc === 'sch' ? (
+              <span>
+                One area only appears in the <b>PCB editor</b>. Open PCB1 to find it.
+              </span>
+            ) : visited.length >= REGIONS.length ? (
+              <span>
+                <b>All seven found.</b> Now try <b>Where is it?</b> to test yourself.
+              </span>
+            ) : (
+              <span>
+                <b>Click anywhere</b> in the editor to find out what each area does.
+              </span>
+            ))}
+          {mode === 'tour' && (
+            <span className="mono l05-modebar__step">
+              STEP {tourIdx + 1} / {TOUR.length} · {regionById(tourRegion).name.toUpperCase()}
+            </span>
+          )}
+          {mode === 'quiz' &&
+            (quizDone ? (
+              <span className="l05-q">
+                <span className="l05-q__n mono">DONE</span> {firstTry.filter(Boolean).length} of {CHALLENGES.length} right first time. Nice
+                navigating!
+              </span>
+            ) : (
+              <span className={`l05-q ${answer && !answer.ok ? 'is-wrong' : ''}`} key={q}>
+                <span className="l05-q__n mono">
+                  {q + 1}/{CHALLENGES.length}
+                </span>
+                {answer && !answer.ok ? (
+                  <span>
+                    Not quite: that's the <b>{regionById(answer.region).name}</b>. {ch.q}
+                  </span>
+                ) : (
+                  <b>{ch.q}</b>
+                )}
+              </span>
+            ))}
+            </>
+  )
+  const showCard = !!info && (compact || !!cardStyle) && (mode !== 'quiz' || !!answer?.ok)
+  const cardEl = showCard && (
+        <div className={`l05-card ${mode === 'quiz' ? 'is-ok' : ''} ${compact ? 'is-flow' : ''}`} style={compact ? undefined : cardStyle} key={`${mode}-${info!.id}`}>
+          <div className="l05-card__head">
+            <span className="l05-card__n mono">{mode === 'quiz' ? <IconCheck size={13} /> : TOUR.indexOf(info!.id) + 1}</span>
+            <span className="l05-card__title">{mode === 'quiz' ? 'Right: the ' + info!.name : info!.name}</span>
+            {mode === 'explore' && (
+              <button className="l05-card__x" onClick={() => setFocus(null)} aria-label="Close">
+                <IconX size={14} />
+              </button>
+            )}
+          </div>
+          <p className="l05-card__body">{mode === 'quiz' ? ch.why : info!.body}</p>
+          {mode !== 'quiz' && info!.tip && !compact && <p className="l05-card__tip">{info!.tip}</p>}
+          {mode !== 'quiz' && !compact && (
+            <div className="l05-card__try">
+              <span className="mono">TRY</span> {TRY[info!.id]}
+            </div>
+          )}
+          {mode === 'tour' && (
+            <div className="l05-card__nav">
+              <div className="l05-dots">
+                {TOUR.map((_, i) => (
+                  <i key={i} className={i === step ? 'is-on' : i < step ? 'is-past' : ''} />
+                ))}
+              </div>
+              <Button size="sm" variant="ghost" icon disabled={step === 0} onClick={() => setStep((s) => s - 1)} aria-label="Previous step">
+                <IconArrowLeft size={14} />
+              </Button>
+              {step < TOUR.length - 1 ? (
+                <Button size="sm" variant="primary" onClick={() => setStep((s) => s + 1)}>
+                  Next <IconArrowRight size={14} />
+                </Button>
+              ) : (
+                <Button size="sm" variant="primary" onClick={() => startMode('quiz')}>
+                  Test yourself <IconArrowRight size={14} />
+                </Button>
+              )}
+            </div>
+          )}
+          {mode === 'quiz' && (
+            <div className="l05-card__nav">
+              <span className="grow" />
+              <Button size="sm" variant="primary" onClick={nextQ}>
+                {q + 1 >= CHALLENGES.length ? 'Finish' : 'Next question'} <IconArrowRight size={14} />
+              </Button>
+            </div>
+          )}
+        </div>
+  )
 
   return (
     <div
@@ -217,38 +326,7 @@ export function Scene() {
             { value: 'quiz', label: compact ? 'Where is it?' : 'Where is it?' },
           ]}
         />
-        <div className="l05-modebar__msg">
-          {mode === 'explore' && (
-            <span>
-              <b>Click anywhere</b> in the editor to find out what each area does.
-            </span>
-          )}
-          {mode === 'tour' && (
-            <span className="mono l05-modebar__step">
-              STEP {tourIdx + 1} / {TOUR.length} · {regionById(tourRegion).name.toUpperCase()}
-            </span>
-          )}
-          {mode === 'quiz' &&
-            (quizDone ? (
-              <span className="l05-q">
-                <span className="l05-q__n mono">DONE</span> {firstTry.filter(Boolean).length} of {CHALLENGES.length} right first time. Nice
-                navigating!
-              </span>
-            ) : (
-              <span className={`l05-q ${answer && !answer.ok ? 'is-wrong' : ''}`} key={q}>
-                <span className="l05-q__n mono">
-                  {q + 1}/{CHALLENGES.length}
-                </span>
-                {answer && !answer.ok ? (
-                  <>
-                    Not quite: that's the <b>{regionById(answer.region).name}</b>. {ch.q.replace(/^Where/, 'Where')}
-                  </>
-                ) : (
-                  <b>{ch.q}</b>
-                )}
-              </span>
-            ))}
-        </div>
+        {!compact && <div className="l05-modebar__msg">{modeMsg}</div>}
         <div className="l05-modebar__chips mono">
           <span className={`l05-pill ${visited.length >= REGIONS.length ? 'is-done' : ''}`} title="Regions visited">
             {visited.length >= REGIONS.length && <IconCheck size={11} />} {visited.length}/{REGIONS.length}
@@ -256,6 +334,8 @@ export function Scene() {
           </span>
         </div>
       </div>
+
+      {compact && (showCard ? cardEl : <div className="l05-card is-flow is-msg">{modeMsg}</div>)}
 
       {/* ---------- the editor ---------- */}
       <div className="l05-stagewrap">
@@ -277,6 +357,7 @@ export function Scene() {
       {spot && <div className="l05-spot" style={{ left: spot.x - 4, top: spot.y - 4, width: spot.w + 8, height: spot.h + 8 }} />}
 
       {mode !== 'quiz' &&
+        !compact &&
         beaconIds.map((id) => {
           const n = TOUR.indexOf(id) + 1
           const seen = visited.includes(id)
@@ -310,55 +391,7 @@ export function Scene() {
         />
       )}
 
-      {info && cardStyle && (mode !== 'quiz' || answer?.ok) && (
-        <div className={`l05-card ${mode === 'quiz' ? 'is-ok' : ''}`} style={cardStyle} key={`${mode}-${info.id}`}>
-          <div className="l05-card__head">
-            <span className="l05-card__n mono">{mode === 'quiz' ? <IconCheck size={13} /> : TOUR.indexOf(info.id) + 1}</span>
-            <span className="l05-card__title">{mode === 'quiz' ? 'Right: the ' + info.name : info.name}</span>
-            {mode === 'explore' && (
-              <button className="l05-card__x" onClick={() => setFocus(null)} aria-label="Close">
-                <IconX size={14} />
-              </button>
-            )}
-          </div>
-          <p className="l05-card__body">{mode === 'quiz' ? ch.why : info.body}</p>
-          {mode !== 'quiz' && info.tip && <p className="l05-card__tip">{info.tip}</p>}
-          {mode !== 'quiz' && (
-            <div className="l05-card__try">
-              <span className="mono">TRY</span> {TRY[info.id]}
-            </div>
-          )}
-          {mode === 'tour' && (
-            <div className="l05-card__nav">
-              <div className="l05-dots">
-                {TOUR.map((_, i) => (
-                  <i key={i} className={i === step ? 'is-on' : i < step ? 'is-past' : ''} />
-                ))}
-              </div>
-              <Button size="sm" variant="ghost" icon disabled={step === 0} onClick={() => setStep((s) => s - 1)} aria-label="Previous step">
-                <IconArrowLeft size={14} />
-              </Button>
-              {step < TOUR.length - 1 ? (
-                <Button size="sm" variant="primary" onClick={() => setStep((s) => s + 1)}>
-                  Next <IconArrowRight size={14} />
-                </Button>
-              ) : (
-                <Button size="sm" variant="primary" onClick={() => startMode('quiz')}>
-                  Test yourself <IconArrowRight size={14} />
-                </Button>
-              )}
-            </div>
-          )}
-          {mode === 'quiz' && (
-            <div className="l05-card__nav">
-              <span className="grow" />
-              <Button size="sm" variant="primary" onClick={nextQ}>
-                {q + 1 >= CHALLENGES.length ? 'Finish' : 'Next question'} <IconArrowRight size={14} />
-              </Button>
-            </div>
-          )}
-        </div>
-      )}
+      {!compact && cardEl}
     </div>
   )
 }

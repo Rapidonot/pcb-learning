@@ -19,7 +19,7 @@ export function Glow({ size, color = '#ff3a1a', opacity = 1, position }: { size:
     <Billboard position={position} userData={{ noFit: true }}>
       <mesh renderOrder={10} userData={{ noFit: true }}>
         <planeGeometry args={[size, size]} />
-        <meshBasicMaterial map={tex} transparent opacity={opacity} depthWrite={false} toneMapped={false} />
+        <meshBasicMaterial map={tex} transparent opacity={opacity} depthWrite={false} depthTest={false} toneMapped={false} />
       </mesh>
     </Billboard>
   )
@@ -74,7 +74,7 @@ export function Wire({ pts, color, r = 0.55 }: { pts: [number, number, number][]
 const BAND = ['#111111', '#7a4a1e', '#d0312d', '#f08a24', '#f1d22c', '#3a9a4a', '#2f62c9', '#7e4cc2', '#8d8d8d', '#f5f5f5']
 
 /** Axial resistor with straight leads, lying along X; body centre at y = r. */
-export function LooseResistor({ bands = [1, 0, 2], body = '#d9c08a', len = 6.4, r = 1.25, lead = 6, gold = true, leadDrop = 0 }: { bands?: number[]; body?: string; len?: number; r?: number; lead?: number; gold?: boolean; leadDrop?: number }) {
+export function LooseResistor({ bands = [1, 0, 2], body = '#d9c08a', len = 6.4, r = 1.25, lead = 6, gold = true, leadDrop = 0, noLeads = false }: { bands?: number[]; body?: string; len?: number; r?: number; lead?: number; gold?: boolean; leadDrop?: number; noLeads?: boolean }) {
   const m = mats()
   const prof = useMemo(() => {
     // dog-bone profile: fat end caps, slimmer middle
@@ -110,7 +110,7 @@ export function LooseResistor({ bands = [1, 0, 2], body = '#d9c08a', len = 6.4, 
           <meshPhysicalMaterial color={c} roughness={0.45} clearcoat={0.5} metalness={i === 3 && gold ? 0.6 : 0} />
         </mesh>
       ))}
-      {[-1, 1].map((s) => (
+      {!noLeads && [-1, 1].map((s) => (
         <Tube
           key={s}
           pts={[
@@ -256,7 +256,7 @@ export function Electrolytic({ r = 3.2, h = 8, sleeve = '#1f3f8a', stripe = '#cf
 }
 
 /** 5 mm LED lying loose / standing on long legs (legs end at y = 0). */
-export function LooseLed({ color = '#ff3a22', on = false, legs = 6, glow = 1 }: { color?: string; on?: boolean; legs?: number; glow?: number }) {
+export function LooseLed({ color = '#ff3a22', on = false, legs = 6, glow = 1, spread = 0.9 }: { color?: string; on?: boolean; legs?: number; glow?: number; spread?: number }) {
   const m = mats()
   const r = 2.5
   const lens = (
@@ -288,8 +288,8 @@ export function LooseLed({ color = '#ff3a22', on = false, legs = 6, glow = 1 }: 
   return (
     <group>
       {/* legs: anode longer, cathode bent */}
-      <Tube pts={[[0.9, 0, 0], [0.9, legs * 0.5, 0], [0.75, legs + 0.3, 0]]} r={0.22} material={m.tin} segments={16} />
-      <Tube pts={[[-0.9, 0.6, 0], [-0.9, legs * 0.5, 0], [-0.75, legs + 0.3, 0]]} r={0.22} material={m.tin} segments={16} />
+      <Tube pts={[[spread, 0, 0], [spread, legs * 0.5, 0], [0.75, legs + 0.3, 0]]} r={0.22} material={m.tin} segments={16} />
+      <Tube pts={[[-spread, 0, 0], [-spread, legs * 0.5, 0], [-0.75, legs + 0.3, 0]]} r={0.22} material={m.tin} segments={16} />
       <group position={[0, legs, 0]}>
         <mesh geometry={dome} castShadow>
           {lens}
