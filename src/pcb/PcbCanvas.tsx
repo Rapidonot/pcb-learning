@@ -123,10 +123,27 @@ export const PcbCanvas = forwardRef<PcbCanvasHandle, PcbCanvasProps>(function Pc
     return { x: fx - (w - fw) / 2, y: fy, w, h: fh }
   }, [fit.x, fit.y, fit.w, fit.h, pad, size.w, size.h])
 
-  // refit whenever the fit rect or container size changes
+  // refit when the fit rect changes; on container resize keep the user's zoom if they've moved the view
+  const userMoved = useRef(false)
+  const lastFit = useRef('')
   useEffect(() => {
-    setVb(computeFit())
-  }, [computeFit])
+    const fitKey = `${fit.x},${fit.y},${fit.w},${fit.h},${pad}`
+    if (fitKey !== lastFit.current || !userMoved.current) {
+      lastFit.current = fitKey
+      userMoved.current = false
+      setVb(computeFit())
+      return
+    }
+    // keep centre and scale, adapt to the new aspect ratio
+    setVb((v) => {
+      if (!v) return computeFit()
+      const cx = v.x + v.w / 2
+      const cy = v.y + v.h / 2
+      const w = v.w
+      const h = w / (size.w / size.h)
+      return { x: cx - w / 2, y: cy - h / 2, w, h }
+    })
+  }, [computeFit]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const view = vb ?? computeFit()
 
@@ -144,6 +161,7 @@ export const PcbCanvas = forwardRef<PcbCanvasHandle, PcbCanvasProps>(function Pc
 
   const zoomAt = useCallback(
     (factor: number, cx?: number, cy?: number) => {
+      userMoved.current = true
       setVb((cur) => {
         const v = cur ?? computeFit()
         const svg = svgRef.current
@@ -178,14 +196,14 @@ export const PcbCanvas = forwardRef<PcbCanvasHandle, PcbCanvasProps>(function Pc
   // panning & pinch
   const pointers = useRef(new Map<number, { x: number; y: number }>())
   const panState = useRef<{ x: number; y: number; vb: ViewBox; bg: boolean; moved: boolean } | null>(null)
-  const pinch = useRef<{ d: number } | null>(null)
+  const pinch = useRef<{ d: number; mx: number; my: number } | null>(null)
 
   const handleDown = (e: React.PointerEvent<SVGSVGElement>) => {
     const world = toWorld(e.clientX, e.clientY)
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
     if (interactive && pointers.current.size === 2) {
       const [a, b] = [...pointers.current.values()]
-      pinch.current = { d: Math.hypot(a.x - b.x, a.y - b.y) }
+      pinch.current = { d: Math.hypot(a.x - b.x, a.y - b.y), mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 }
       panState.current = null
       return
     }
@@ -204,8 +222,18 @@ export const PcbCanvas = forwardRef<PcbCanvasHandle, PcbCanvasProps>(function Pc
     if (pinch.current && pointers.current.size === 2) {
       const [a, b] = [...pointers.current.values()]
       const d = Math.hypot(a.x - b.x, a.y - b.y)
-      zoomAt(pinch.current.d / d, (a.x + b.x) / 2, (a.y + b.y) / 2)
-      pinch.current.d = d
+      const mx = (a.x + b.x) / 2
+      const my = (a.y + b.y) / 2
+      const svg = svgRef.current
+      if (svg) {
+        // two-finger pan follows the midpoint
+        const r = svg.getBoundingClientRect()
+        const ddx = mx - pinch.current.mx
+        const ddy = my - pinch.current.my
+        setVb((v) => (v ? { ...v, x: v.x - (ddx / r.width) * v.w, y: v.y - (ddy / r.height) * v.h } : v))
+      }
+      zoomAt(pinch.current.d / d, mx, my)
+      pinch.current = { d, mx, my }
       return
     }
     if (panState.current) {
@@ -214,6 +242,7 @@ export const PcbCanvas = forwardRef<PcbCanvasHandle, PcbCanvasProps>(function Pc
       const p = panState.current
       if (Math.hypot(e.clientX - p.x, e.clientY - p.y) > 4) p.moved = true
       if (!p.moved) return
+      userMoved.current = true
       const dx = ((e.clientX - p.x) / r.width) * p.vb.w
       const dy = ((e.clientY - p.y) / r.height) * p.vb.h
       setVb({ ...p.vb, x: p.vb.x - dx, y: p.vb.y - dy })
@@ -287,7 +316,13 @@ export const PcbCanvas = forwardRef<PcbCanvasHandle, PcbCanvasProps>(function Pc
           <button aria-label="Zoom out" onClick={() => zoomAt(1.33)}>
             <IconMinus size={15} />
           </button>
-          <button aria-label="Fit to view" onClick={() => setVb(computeFit())}>
+          <button
+            aria-label="Fit to view"
+            onClick={() => {
+              userMoved.current = false
+              setVb(computeFit())
+            }}
+          >
             <IconTarget size={15} />
           </button>
         </div>

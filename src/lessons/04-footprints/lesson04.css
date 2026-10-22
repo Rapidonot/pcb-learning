@@ -16,13 +16,17 @@
 .l04-scene.is-dark .scene-toolbar .btn {
   --btn-fg: #d9d5c9;
 }
-.l04-scene.is-dark .scene-toolbar .btn.is-active {
-  --btn-bg: #ece6d8;
-  --btn-fg: #171815;
-  --btn-bd: #ece6d8;
+.l04-scene.is-dark .scene-toolbar .btn.is-active:not(.btn--accent):not(.btn--primary) {
+  background: #ece6d8;
+  color: #171815;
 }
-.l04-scene.is-dark .scene-toolbar .btn--ghost:hover {
+.l04-scene.is-dark .scene-toolbar .btn:not(.is-active):not(.btn--accent):not(.btn--primary):hover {
   background: rgba(255, 255, 255, 0.08);
+}
+/* local fix: the shared `.scene-toolbar .btn:not(...):not(...)` rule outranks `.is-active` */
+.l04-scene.is-light .scene-toolbar .btn.is-active:not(.btn--accent):not(.btn--primary) {
+  background: var(--ink);
+  color: var(--paper);
 }
 .l04-canvas {
   position: absolute;

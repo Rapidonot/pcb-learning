@@ -185,6 +185,9 @@
   font-size: 12px;
   animation: pop 0.5s 0.1s var(--ease-spring) both;
 }
+.toast--info .toast__icon {
+  background: var(--info);
+}
 .toast--mission .toast__icon,
 .toast--success .toast__icon {
   background: var(--good);

@@ -22,7 +22,7 @@ function MapVsTerritory() {
   return (
     <div className="l06-map">
       <div>
-        <svg viewBox={`${b.x - 4} ${b.y - 4} ${b.w + 8} ${b.h + 8}`} width="100%" style={{ background: 'var(--sch-bg)', borderRadius: 8 }}>
+        <svg viewBox={`${b.x - 16} ${b.y - 4} ${b.w + 20} ${b.h + 8}`} width="100%" style={{ background: 'var(--sch-bg)', borderRadius: 8 }}>
           <SchDrawing doc={doc} graph={graph} showPinNumbers={false} />
         </svg>
         <div className="l06-map__cap">The map · schematic</div>

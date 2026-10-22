@@ -178,83 +178,98 @@ function ViaTypes() {
 /** Side cut of an SMD pad with a part on it: via beside the pad (good) or inside it (solder drains away). */
 function ViaInPad({ inPad }: { inPad: boolean }) {
   const p = inPad ? 'vip1' : 'vip0'
-  const top = 0.7
+  const W = 4.4
+  const top = 1.05 // top of the FR-4
   const core = 1.6
   const cu = 0.07
-  const padX0 = 0.7
-  const padX1 = 2.5
-  const viaX = inPad ? (padX0 + padX1) / 2 : 3.35
+  const padTop = top - cu
+  const padX0 = 1.2
+  const padX1 = 2.9
+  const viaX = inPad ? 2.35 : 3.7
   const hole = 0.3
   const plate = 0.035
   const ring = 0.6
-  const solderTop = inPad ? top - cu - 0.1 : top - cu - 0.2
+  const capX0 = 1.0
+  const capX1 = 1.85
+  const capTop = padTop - 0.62
+  const capBot = padTop - (inPad ? 0.03 : 0.07)
+  const hx0 = viaX - hole / 2 - plate
+  const hx1 = viaX + hole / 2 + plate
   return (
-    <svg viewBox="0 0 4.2 2.6" role="img" aria-label={inPad ? 'A via inside a pad: solder drains down the hole' : 'A via beside the pad, joined by a short track'} style={{ display: 'block', width: '100%', height: 'auto', marginBottom: 10 }}>
+    <svg viewBox={`0 0 ${W} 2.9`} role="img" aria-label={inPad ? 'A via inside a pad: solder drains down the hole' : 'A via beside the pad, joined by a short track'} style={{ display: 'block', width: '100%', height: 'auto', marginBottom: 10 }}>
       <SectionDefs p={p} />
       <defs>
-        <linearGradient id={`${p}-sol`} x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id={`${p}-sol`} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#ffffff" />
-          <stop offset="0.45" stopColor="#c9ced4" />
-          <stop offset="1" stopColor="#8e959d" />
+          <stop offset="0.45" stopColor="#cfd4da" />
+          <stop offset="1" stopColor="#8a9199" />
         </linearGradient>
-        <linearGradient id={`${p}-cap`} x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stopColor="#8f949a" />
-          <stop offset="0.4" stopColor="#eef1f4" />
-          <stop offset="1" stopColor="#9da3a9" />
+        <linearGradient id={`${p}-cap`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#f3f5f7" />
+          <stop offset="0.5" stopColor="#c3c8ce" />
+          <stop offset="1" stopColor="#8d939a" />
+        </linearGradient>
+        <linearGradient id={`${p}-body`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#4a4a50" />
+          <stop offset="1" stopColor="#1c1c1f" />
         </linearGradient>
       </defs>
-      {/* FR-4 with the drilled hole */}
-      <path d={`M 0 ${top} H ${viaX - hole / 2 - plate} V ${top + core} H 0 Z M ${viaX + hole / 2 + plate} ${top} H 4.2 V ${top + core} H ${viaX + hole / 2 + plate} Z`} fill={`url(#${p}-weave)`} filter={`url(#${p}-shadow)`} />
-      {/* barrel */}
-      <rect x={viaX - hole / 2} y={top - cu} width={hole} height={core + cu * 2} fill={`url(#${p}-tube)`} />
-      <rect x={viaX - hole / 2 - plate} y={top - cu} width={plate} height={core + cu * 2} fill={`url(#${p}-plateL)`} />
-      <rect x={viaX + hole / 2} y={top - cu} width={plate} height={core + cu * 2} fill={`url(#${p}-plateR)`} />
-      {/* bottom ring */}
-      <rect x={viaX - ring / 2} y={top + core} width={ring} height={cu} fill={`url(#${p}-cu)`} />
-      {/* pad (and, when beside, a short track + via ring) */}
+      {/* FR-4, drilled */}
+      <path d={`M 0 ${top} H ${hx0} V ${top + core} H 0 Z M ${hx1} ${top} H ${W} V ${top + core} H ${hx1} Z`} fill={`url(#${p}-weave)`} filter={`url(#${p}-shadow)`} />
+      <path d={`M 0 ${top} H ${hx0} V ${top + core} H 0 Z M ${hx1} ${top} H ${W} V ${top + core} H ${hx1} Z`} fill={`url(#${p}-resin)`} />
+      {/* barrel + rings */}
+      <rect x={viaX - hole / 2} y={padTop} width={hole} height={core + cu * 2} fill={`url(#${p}-tube)`} />
+      <rect x={hx0} y={padTop} width={plate} height={core + cu * 2} fill={`url(#${p}-plateL)`} />
+      <rect x={viaX + hole / 2} y={padTop} width={plate} height={core + cu * 2} fill={`url(#${p}-plateR)`} />
+      <rect x={viaX - ring / 2} y={top + core} width={(ring - hole) / 2 - plate} height={cu} fill={`url(#${p}-cu)`} />
+      <rect x={hx1} y={top + core} width={(ring - hole) / 2 - plate} height={cu} fill={`url(#${p}-cu)`} />
+      {/* top copper: pad (+ track + ring when the via is beside it) */}
       {inPad ? (
         <>
-          <rect x={padX0} y={top - cu} width={viaX - hole / 2 - plate - padX0} height={cu} fill={`url(#${p}-cu)`} />
-          <rect x={viaX + hole / 2 + plate} y={top - cu} width={padX1 - viaX - hole / 2 - plate} height={cu} fill={`url(#${p}-cu)`} />
+          <rect x={padX0} y={padTop} width={hx0 - padX0} height={cu} fill={`url(#${p}-cu)`} />
+          <rect x={hx1} y={padTop} width={padX1 - hx1} height={cu} fill={`url(#${p}-cu)`} />
         </>
       ) : (
         <>
-          <rect x={padX0} y={top - cu} width={padX1 - padX0} height={cu} fill={`url(#${p}-cu)`} />
-          <rect x={padX1} y={top - cu} width={viaX - padX1} height={cu} fill={`url(#${p}-cu)`} opacity={0.9} />
-          <rect x={viaX - ring / 2} y={top - cu} width={(ring - hole) / 2 - plate} height={cu} fill={`url(#${p}-cu)`} />
-          <rect x={viaX + hole / 2 + plate} y={top - cu} width={(ring - hole) / 2 - plate} height={cu} fill={`url(#${p}-cu)`} />
-          {/* mask over the track */}
-          <rect x={padX1 + 0.05} y={top - cu - 0.05} width={viaX - ring / 2 - padX1 - 0.1} height={0.05} fill={`url(#${p}-mask)`} />
+          <rect x={padX0} y={padTop} width={hx0 - padX0} height={cu} fill={`url(#${p}-cu)`} />
+          <rect x={hx1} y={padTop} width={(ring - hole) / 2 - plate} height={cu} fill={`url(#${p}-cu)`} />
+          {/* solder mask over the short track, stopping at the pad */}
+          <rect x={padX1 + 0.06} y={padTop - 0.045} width={viaX - ring / 2 - padX1 - 0.12} height={0.045} rx={0.01} fill={`url(#${p}-mask)`} />
+          <rect x={viaX + ring / 2 + 0.06} y={padTop - 0.045} width={W - viaX - ring / 2 - 0.06} height={0.045} fill={`url(#${p}-mask)`} />
         </>
       )}
-      {/* solder: a fillet from pad up to the end cap; in-pad loses some down the barrel */}
-      <path
-        d={inPad
-          ? `M ${padX0 + 0.05} ${top - cu} Q ${padX0 + 0.25} ${solderTop + 0.1} ${padX0 + 0.55} ${solderTop - 0.05} L ${padX0 + 0.55} ${top - cu} Z`
-          : `M ${padX0 + 0.02} ${top - cu} Q ${padX0 + 0.1} ${solderTop - 0.15} ${padX0 + 0.55} ${solderTop - 0.32} L ${padX1 - 0.05} ${solderTop + 0.02} L ${padX1 - 0.02} ${top - cu} Z`}
-        fill={`url(#${p}-sol)`}
-      />
-      {inPad && (
+      <rect x={0} y={padTop - 0.045} width={padX0 - 0.06} height={0.045 + cu} fill={`url(#${p}-mask)`} />
+      {/* solder */}
+      {inPad ? (
         <>
-          <rect x={viaX - hole / 2} y={top - cu} width={hole} height={0.75} fill={`url(#${p}-sol)`} />
-          <path d={`M ${viaX - hole / 2} ${top - cu + 0.75} q ${hole / 2} 0.12 ${hole} 0`} fill={`url(#${p}-sol)`} />
-          <rect x={viaX + hole / 2 + plate} y={solderTop + 0.12} width={padX1 - viaX - hole / 2 - plate - 0.05} height={top - cu - solderTop - 0.12} fill={`url(#${p}-sol)`} opacity={0.8} />
+          <path d={`M ${capX1} ${capBot - 0.12} Q ${capX1 + 0.08} ${padTop - 0.02} ${hx0 - 0.02} ${padTop} L ${capX1} ${padTop} Z`} fill={`url(#${p}-sol)`} />
+          <rect x={capX0 + 0.2} y={capBot} width={capX1 - capX0 - 0.2} height={padTop - capBot} fill={`url(#${p}-sol)`} />
+          <rect x={viaX - hole / 2} y={padTop} width={hole} height={0.85} fill={`url(#${p}-sol)`} />
+          <path d={`M ${viaX - hole / 2} ${padTop + 0.85} q ${hole / 2} 0.1 ${hole} 0 Z`} fill={`url(#${p}-sol)`} />
+        </>
+      ) : (
+        <>
+          <rect x={capX0 + 0.2} y={capBot} width={capX1 - capX0 - 0.2} height={padTop - capBot} fill={`url(#${p}-sol)`} />
+          <path d={`M ${capX1} ${capTop + 0.08} Q ${capX1 + 0.12} ${padTop - 0.08} ${padX1 - 0.02} ${padTop} L ${capX1} ${padTop} Z`} fill={`url(#${p}-sol)`} />
         </>
       )}
-      {/* the part's end cap sitting on the solder */}
-      <rect x={padX0 + 0.55} y={solderTop - 0.45} width={1.4} height={0.45 - (inPad ? 0.1 : 0)} rx={0.04} fill={`url(#${p}-cap)`} filter={`url(#${p}-shadow)`} />
-      <rect x={padX0 + 1.95} y={solderTop - 0.45} width={1.6} height={0.45 - (inPad ? 0.1 : 0)} fill="#2a2a2e" opacity={0.92} />
-      <g fontFamily="var(--font-mono)" fontSize={0.13} fontWeight={600} letterSpacing={0.015} fill="var(--ink-2)">
+      {/* the part: body off to the left, metal end cap on the pad */}
+      <g filter={`url(#${p}-shadow)`}>
+        <rect x={-0.2} y={capTop + 0.02} width={capX0 + 0.22} height={capBot - capTop - 0.02} fill={`url(#${p}-body)`} />
+        <rect x={capX0} y={capTop} width={capX1 - capX0} height={capBot - capTop} rx={0.04} fill={`url(#${p}-cap)`} />
+      </g>
+      <g fontFamily="var(--font-mono)" fontSize={0.135} fontWeight={600} letterSpacing={0.015} fill="var(--ink-2)">
         {inPad ? (
           <>
-            <text x={viaX + 0.28} y={top + 0.62}>SOLDER WICKS</text>
-            <text x={viaX + 0.28} y={top + 0.8}>DOWN THE HOLE</text>
-            <line x1={viaX + 0.25} y1={top + 0.58} x2={viaX + 0.05} y2={top + 0.4} stroke="var(--ink-3)" strokeWidth={0.012} />
+            <line x1={viaX + 0.05} y1={padTop + 0.55} x2={viaX + 0.45} y2={padTop + 0.75} stroke="var(--ink-2)" strokeWidth={0.012} />
+            <text x={viaX + 0.48} y={padTop + 0.8}>SOLDER WICKS</text>
+            <text x={viaX + 0.48} y={padTop + 0.98}>DOWN THE HOLE</text>
+            <text x={capX1 + 0.1} y={capTop - 0.12}>STARVED JOINT</text>
           </>
         ) : (
           <>
-            <text x={viaX - 0.2} y={0.32} textAnchor="middle">VIA</text>
-            <text x={padX0 + 0.1} y={0.32}>FULL FILLET</text>
+            <text x={viaX} y={padTop - 0.3} textAnchor="middle">VIA</text>
+            <text x={capX1 + 0.1} y={capTop - 0.12}>FULL FILLET</text>
           </>
         )}
       </g>

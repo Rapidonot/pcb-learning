@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { createPortal } from 'react-dom'
 
 /** A celebratory burst of tiny resistors, LEDs and copper squares. */
 export function Confetti({ fire }: { fire: number }) {
@@ -73,5 +74,6 @@ export function Confetti({ fire }: { fire: number }) {
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
   }, [fire])
-  return <canvas ref={ref} style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh', pointerEvents: 'none', zIndex: 90 }} aria-hidden />
+  // portalled to <body> so transformed ancestors can't clip the fixed-position canvas
+  return createPortal(<canvas ref={ref} style={{ position: 'fixed', inset: 0, width: '100vw', height: '100vh', pointerEvents: 'none', zIndex: 90 }} aria-hidden />, document.body)
 }

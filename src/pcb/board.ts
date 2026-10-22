@@ -260,7 +260,8 @@ export function analyze(doc: BoardDoc): Connectivity {
       if (!it.shapes.every((s) => pourContains(pour, s))) continue
       const nets = rootNet.get(dsu.find(it.id))
       // a via/track that belongs to the pour's net (or is floating) gets stitched in
-      if (it.kind === 'via' && (!nets || (nets.size === 1 && nets.has(pour.net)))) dsu.union(pid, it.id)
+      // vias and tracks inside the pour merge into it unless they already carry another net
+      if ((it.kind === 'via' || it.kind === 'track') && (!nets || (nets.size === 1 && nets.has(pour.net)))) dsu.union(pid, it.id)
     }
   }
 

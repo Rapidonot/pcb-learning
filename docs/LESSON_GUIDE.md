@@ -82,6 +82,9 @@ Coordinates: board space is mm, origin at the board's top-left corner, +y down. 
 
 Article helpers in `src/components/content.tsx`: `Figure` (captioned frame), `Formula`, `Compare` (do/don't), `Steps` (numbered list), `Menu` (inline EasyEDA menu path), `Specs` (spec cards), `EdaWindow` (a mock EasyEDA Pro window frame), `SceneToolbar`, `SceneStatus`. Prose styles live in `src/styles/prose.css`: use `<p className="lead">` for the opener, then `<h2>` sections, `<ul>`, `<table>`, `<Callout kind="tip|warn|danger|easyeda|fab|info">`.
 
+### Gotcha: uppercase labels
+Mono uppercase labels (`.eyebrow`, `.field__label`, `.readout__label`, `Specs` keys) use `text-transform: uppercase`, which turns units into nonsense ("mW" becomes "MW", "µF" becomes "MF"). Put units in the value, not the label, or wrap them in `<span style={{ textTransform: 'none' }}>`.
+
 ## Writing style
 
 - Audience: a smart beginner with no electronics background. Explain every term the first time it appears. Short paragraphs. Concrete analogies (water pipes, roads and bridges…). Encouraging, never condescending.

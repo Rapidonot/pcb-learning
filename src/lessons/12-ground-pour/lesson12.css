@@ -85,7 +85,7 @@
   color: #ff8a7a;
 }
 
-.scene-toolbar .btn.l12-hot {
+.scene-toolbar .btn.l12-hot:not(.btn--accent):not(.btn--primary) {
   background: var(--accent);
   color: #fff;
   animation: l12-pulse 1.4s ease-in-out infinite;

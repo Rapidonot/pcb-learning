@@ -155,8 +155,8 @@ function Article() {
         Create one with <Menu path={['File', 'New', 'Project']} />. A new Pro project already contains three things: a{' '}
         <strong>board</strong>, a <strong>schematic</strong> and a <strong>PCB</strong>. The board is the folder that ties a schematic
         to its PCB. That pairing matters: the schematic and PCB must belong to the same board, or EasyEDA can't turn one into the
-        other or keep them in sync. You can add more pages with <Menu path={['File', 'New', 'Schematic']} /> or{' '}
-        <Menu path={['File', 'New', 'PCB']} />.
+        other or keep them in sync. Should you ever need extra pages, <Menu path={['File', 'New', 'Schematic']} /> and{' '}
+        <Menu path={['File', 'New', 'PCB']} /> add them.
       </p>
 
       <h2>The six areas of the editor</h2>

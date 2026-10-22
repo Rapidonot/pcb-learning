@@ -75,8 +75,8 @@ function Astable() {
         <Slider label="R2 · timing resistor B" value={ri2} min={0} max={R_VALUES.length - 1} onChange={setRi2} format={(i) => fmtR(R_VALUES[i])} />
         <Slider label="C1 · timing capacitor" value={ci} min={0} max={C_VALUES.length - 1} onChange={setCi} format={(i) => fmtC(C_VALUES[i])} />
         <div className="l07-astable__note">
-          Blinky uses 1kΩ, 47kΩ and 10µF. Bigger resistors or a bigger capacitor mean a slower blink. Above roughly 25 Hz your eye
-          can no longer see the flicker and the LED just looks dimmer.
+          Blinky uses 1kΩ, 47kΩ and 10µF. Bigger resistors or a bigger capacitor mean a slower blink. Push it to a few dozen blinks a
+          second and your eye can no longer follow the flicker: the LED just looks steadily lit.
         </div>
       </div>
       <div className="l07-astable__out">

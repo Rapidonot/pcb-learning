@@ -1412,3 +1412,30 @@ button.l05-results__row.is-on {
   background: var(--paper-2);
   border-style: dashed;
 }
+.l05.is-tour .l05-card.is-flow,
+.l05.is-quiz .l05-card.is-flow:not(.is-msg) {
+  height: auto;
+  min-height: 138px;
+}
+.l05-areas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 9px;
+}
+.l05-areas span {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line-2);
+  color: var(--ink-3);
+}
+.l05-areas span.is-on {
+  background: var(--good-soft);
+  border-color: color-mix(in srgb, var(--good) 40%, transparent);
+  color: var(--good);
+}

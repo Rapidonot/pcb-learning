@@ -130,7 +130,7 @@ function Toaster() {
     <div className="toaster" role="status" aria-live="polite">
       {toasts.map((t) => (
         <div key={t.id} className={`toast toast--${t.kind}`}>
-          <div className="toast__icon">{t.kind === 'mission' || t.kind === 'success' ? <IconCheck size={14} /> : '!'}</div>
+          <div className="toast__icon">{t.kind === 'mission' || t.kind === 'success' ? <IconCheck size={14} /> : t.kind === 'info' ? 'i' : '!'}</div>
           <div className="grow">
             <div className="toast__title">{t.title}</div>
             {t.body && <div className="toast__body">{t.body}</div>}

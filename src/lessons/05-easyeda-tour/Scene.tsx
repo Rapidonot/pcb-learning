@@ -109,6 +109,7 @@ export function Scene() {
       else if (id === 'project') set({ leftOpen: compact, rightOpen: false })
       else if (id === 'bottom') set({ bottomOpen: true, leftOpen: false, rightOpen: false })
       else set({ leftOpen: false, rightOpen: false })
+      if (compact && id !== 'bottom') set({ bottomOpen: false })
     },
     [set, compact],
   )
@@ -139,7 +140,9 @@ export function Scene() {
     }
   }
 
-  const matches = (clicked: RegionId, want: RegionId) => clicked === want || (compact && want === 'layers' && clicked === 'property' && mock.doc === 'pcb')
+  const rightSide = (r: RegionId) => r === 'property' || r === 'layers'
+  // on phones the right drawer holds both Property and Layers, so its pill answers either
+  const matches = (clicked: RegionId, want: RegionId) => clicked === want || (compact && mock.doc === 'pcb' && rightSide(clicked) && rightSide(want))
 
   const onDownCapture = (e: React.PointerEvent) => {
     rootRef.current?.focus({ preventScroll: true })
@@ -335,7 +338,25 @@ export function Scene() {
         </div>
       </div>
 
-      {compact && (showCard ? cardEl : <div className="l05-card is-flow is-msg">{modeMsg}</div>)}
+      {compact &&
+        (showCard ? (
+          cardEl
+        ) : (
+          <div className="l05-card is-flow is-msg">
+            <div>
+              <div>{modeMsg}</div>
+              {mode === 'explore' && (
+                <div className="l05-areas">
+                  {REGIONS.map((r) => (
+                    <span key={r.id} className={visited.includes(r.id) ? 'is-on' : ''}>
+                      {visited.includes(r.id) && <IconCheck size={10} />} {r.short}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
 
       {/* ---------- the editor ---------- */}
       <div className="l05-stagewrap">

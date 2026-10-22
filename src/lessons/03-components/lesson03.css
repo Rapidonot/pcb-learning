@@ -938,3 +938,9 @@
     box-shadow: var(--shadow-2), inset 0 1px 0 rgba(255, 255, 255, 0.04);
   }
 }
+
+/* local fix: the shared `.scene-toolbar .btn:not(...):not(...)` rule outranks `.is-active`, hiding the active pill */
+.l03-scene .scene-toolbar .btn.is-active:not(.btn--accent):not(.btn--primary) {
+  background: var(--ink);
+  color: var(--paper);
+}

@@ -436,12 +436,12 @@
   }
 }
 
-.scene-toolbar .btn.l11-hot {
+.scene-toolbar .btn.l11-hot:not(.btn--accent):not(.btn--primary) {
   background: var(--accent);
   color: #fff;
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent);
 }
-.scene-toolbar .btn.l11-hot:hover {
+.scene-toolbar .btn.l11-hot:not(.btn--accent):not(.btn--primary):hover {
   background: var(--accent-ink);
 }
 

@@ -860,8 +860,8 @@ export function EdaMock(props: EdaMockProps) {
                 <button className="l05-edge l05-edge--l" ref={regionRef('left')} data-region="project" onClick={() => set({ leftOpen: !props.leftOpen, rightOpen: false })}>
                   <Ico n="folder" size={13} /> Project
                 </button>
-                <button className="l05-edge l05-edge--r" ref={regionRef('right')} data-region={doc === 'pcb' ? 'layers' : 'property'} onClick={() => set({ rightOpen: !props.rightOpen, leftOpen: false })}>
-                  {doc === 'pcb' ? 'Layers' : 'Property'} <Ico n="chev" size={11} />
+                <button className="l05-edge l05-edge--r" ref={regionRef('right')} data-region={doc === 'pcb' && props.rightTab === 'layers' ? 'layers' : 'property'} onClick={() => set({ rightOpen: !props.rightOpen, leftOpen: false })}>
+                  {doc === 'pcb' ? 'Layers · Property' : 'Property'} <Ico n="chev" size={11} />
                 </button>
               </>
             )}
