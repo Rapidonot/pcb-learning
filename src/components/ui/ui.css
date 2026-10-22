@@ -21,6 +21,9 @@
   box-shadow: 0 1px 0 color-mix(in srgb, var(--ink) 6%, transparent);
   user-select: none;
 }
+.btn svg {
+  flex: none;
+}
 .btn:hover {
   border-color: var(--line-3);
   background: var(--card-2);

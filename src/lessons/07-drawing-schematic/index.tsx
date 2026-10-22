@@ -34,8 +34,17 @@ function Astable() {
   // phase (0..1 of a period) driven by real time
   const [phase, setPhase] = useState(0)
   const startRef = useRef(performance.now())
+  const boxRef = useRef<HTMLDivElement>(null)
+  const [visible, setVisible] = useState(false)
   useEffect(() => {
-    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
+    const el = boxRef.current
+    if (!el) return
+    const io = new IntersectionObserver(([e]) => setVisible(e.isIntersecting))
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
+  useEffect(() => {
+    if (!visible || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
     let raf = 0
     const tick = (now: number) => {
       const t = (now - startRef.current) / 1000
@@ -44,7 +53,7 @@ function Astable() {
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [T, tooFast])
+  }, [T, tooFast, visible])
   const on = tooFast ? true : phase < duty
 
   // scope traces over 2.5 periods
@@ -69,7 +78,7 @@ function Astable() {
   }
 
   return (
-    <div className="l07-astable">
+    <div className="l07-astable" ref={boxRef}>
       <div className="l07-astable__controls">
         <Slider label="R1 · timing resistor A" value={ri1} min={0} max={R_VALUES.length - 1} onChange={setRi1} format={(i) => fmtR(R_VALUES[i])} />
         <Slider label="R2 · timing resistor B" value={ri2} min={0} max={R_VALUES.length - 1} onChange={setRi2} format={(i) => fmtR(R_VALUES[i])} />

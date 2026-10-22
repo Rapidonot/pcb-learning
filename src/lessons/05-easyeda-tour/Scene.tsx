@@ -153,7 +153,8 @@ export function Scene() {
     const region = el.getAttribute('data-region') as RegionId
     if (mode === 'explore') {
       visit(region)
-      setFocus(region)
+      // a second click on the canvas means "let me work": tuck the card away
+      setFocus((f) => (f === 'canvas' && region === 'canvas' ? null : region))
     } else if (mode === 'quiz' && ch && !(answer?.ok) && !quizDone) {
       e.preventDefault()
       e.stopPropagation()
@@ -366,7 +367,7 @@ export function Scene() {
           set={set}
           regionRef={regionRef}
           onLayerHidden={() => mission.complete('layer')}
-          onValueEdited={() => {}}
+          onValueEdited={() => visit('property')}
           onSearch555={() => visit('bottom')}
           status={status}
           setStatus={setStatus}

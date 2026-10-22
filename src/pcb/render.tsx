@@ -10,6 +10,7 @@ import {
   type Layer,
   type PartInst,
   type Pour,
+  type Track,
   type WorldPad,
 } from './board'
 import { EDA, MASKS, REAL, type FinishColor, type MaskColor } from './palette'
@@ -671,6 +672,7 @@ export function PourFill({
   opacity = 1,
   uid,
   thermals = true,
+  spoke = 0.35,
 }: {
   pour: Pour
   doc: BoardDoc
@@ -679,19 +681,46 @@ export function PourFill({
   opacity?: number
   uid: string
   thermals?: boolean
+  /** thermal-relief spoke width (mm) */
+  spoke?: number
 }) {
   const id = `pour-${uid}-${cleanId(pour.id)}`
   const c = pour.clearance
   const layer = pour.layer
-  const spoke = 0.35
+  const layerPads = conn.pads.filter((p) => p.layers.includes(layer))
+  const samePads = layerPads.filter((p) => p.net === pour.net)
+  const otherPads = layerPads.filter((p) => p.net !== pour.net)
+  const trackNet = (t: Track) => conn.netOf.get(`track:${t.id}`) ?? t.net
+  // Order matters: same-net reliefs first, then every other-net clearance cut-out on top,
+  // so a spoke can never paint copper into another net's clearance gap.
   return (
     <g>
       <defs>
         <mask id={id} maskUnits="userSpaceOnUse" x={-5} y={-5} width={doc.w + 10} height={doc.h + 10}>
           <polygon points={ptsStr(pour.pts)} fill="#fff" />
-          {/* other-net tracks */}
+          {/* same-net pads: thermal relief (or solid) */}
+          {samePads.map((p) => (
+            <g key={p.key} transform={`translate(${p.x} ${p.y}) rotate(${p.rot})`}>
+              {thermals ? (
+                <>
+                  <PadGlyph pad={p} fill="#000" hole={null} inflate={c} />
+                  <rect x={-p.w / 2 - c - 0.05} y={-spoke / 2} width={p.w + 2 * c + 0.1} height={spoke} fill="#fff" />
+                  <rect x={-spoke / 2} y={-p.h / 2 - c - 0.05} width={spoke} height={p.h + 2 * c + 0.1} fill="#fff" />
+                </>
+              ) : (
+                <PadGlyph pad={p} fill="#fff" hole={null} inflate={0.01} />
+              )}
+            </g>
+          ))}
+          {/* same-net tracks merge into the pour */}
           {doc.tracks
-            .filter((t) => t.layer === layer && (conn.netOf.get(`track:${t.id}`) ?? t.net) !== pour.net)
+            .filter((t) => t.layer === layer && trackNet(t) === pour.net)
+            .map((t) => (
+              <polyline key={t.id} points={ptsStr(t.pts)} fill="none" stroke="#fff" strokeWidth={t.width} strokeLinecap="round" strokeLinejoin="round" />
+            ))}
+          {/* other-net copper gets a clearance cut-out */}
+          {doc.tracks
+            .filter((t) => t.layer === layer && trackNet(t) !== pour.net)
             .map((t) => (
               <polyline
                 key={t.id}
@@ -703,36 +732,16 @@ export function PourFill({
                 strokeLinejoin="round"
               />
             ))}
-          {/* vias of other nets */}
           {doc.vias
             .filter((v) => conn.netOf.get(`via:${v.id}`) !== pour.net)
             .map((v) => (
               <circle key={v.id} cx={v.x} cy={v.y} r={v.d / 2 + c} fill="#000" />
             ))}
-          {/* pads: other nets get clearance; same net gets thermal relief */}
-          {conn.pads
-            .filter((p) => p.layers.includes(layer))
-            .map((p) => {
-              const same = p.net === pour.net
-              return (
-                <g key={p.key} transform={`translate(${p.x} ${p.y}) rotate(${p.rot})`}>
-                  <PadGlyph pad={p} fill="#000" hole={null} inflate={c} />
-                  {same && thermals && (
-                    <>
-                      <rect x={-p.w / 2 - c - 0.05} y={-spoke / 2} width={p.w + 2 * c + 0.1} height={spoke} fill="#fff" />
-                      <rect x={-spoke / 2} y={-p.h / 2 - c - 0.05} width={spoke} height={p.h + 2 * c + 0.1} fill="#fff" />
-                    </>
-                  )}
-                  {same && !thermals && <PadGlyph pad={p} fill="#fff" hole={null} inflate={c + 0.01} />}
-                </g>
-              )
-            })}
-          {/* same-net tracks merge into the pour */}
-          {doc.tracks
-            .filter((t) => t.layer === layer && (conn.netOf.get(`track:${t.id}`) ?? t.net) === pour.net)
-            .map((t) => (
-              <polyline key={t.id} points={ptsStr(t.pts)} fill="none" stroke="#fff" strokeWidth={t.width} strokeLinecap="round" strokeLinejoin="round" />
-            ))}
+          {otherPads.map((p) => (
+            <g key={p.key} transform={`translate(${p.x} ${p.y}) rotate(${p.rot})`}>
+              <PadGlyph pad={p} fill="#000" hole={null} inflate={c} />
+            </g>
+          ))}
         </mask>
       </defs>
       <polygon points={ptsStr(pour.pts)} fill={fill} opacity={opacity} mask={`url(#${id})`} />
