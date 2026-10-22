@@ -105,13 +105,13 @@ export function Tweezers() {
 export function Wick({ used }: { used: boolean }) {
   return (
     <g transform="rotate(32)" filter="url(#l17t-shadow)">
-      <rect x={-210} y={-8} width={222} height={16} rx={2} fill="url(#l17t-braid)" />
+      <rect x={-330} y={-8} width={342} height={16} rx={2} fill="url(#l17t-braid)" />
       <rect x={-14} y={-8} width={26} height={16} rx={2} fill="url(#l17t-braidUsed)" opacity={used ? 1 : 0} style={{ transition: 'opacity 0.6s 0.3s' }} />
-      <rect x={-210} y={-8} width={222} height={4} fill="#fff" opacity={0.18} />
+      <rect x={-330} y={-8} width={342} height={4} fill="#fff" opacity={0.18} />
       {/* the spool it comes from */}
-      <circle cx={-232} cy={0} r={28} fill="#2e6f9e" />
-      <circle cx={-232} cy={0} r={20} fill="#c47a3c" />
-      <circle cx={-232} cy={0} r={7} fill="#1b3f5c" />
+      <circle cx={-370} cy={0} r={40} fill="#2e6f9e" />
+      <circle cx={-370} cy={0} r={30} fill="#c47a3c" />
+      <circle cx={-370} cy={0} r={10} fill="#1b3f5c" />
     </g>
   )
 }
@@ -130,7 +130,7 @@ export function SolderWire() {
 export function Probe({ color, angle, active }: { color: 'red' | 'black'; angle: number; active?: boolean }) {
   const body = color === 'red' ? 'url(#l17t-red)' : 'url(#l17t-black)'
   return (
-    <g transform={`rotate(${angle})`} filter="url(#l17t-shadow)">
+    <g transform={`rotate(${angle}) scale(0.86)`} filter="url(#l17t-shadow)">
       <rect x={0} y={-1.1} width={26} height={2.2} rx={1} fill="url(#l17t-steel)" />
       <path d="M 26 -3 L 34 -5.5 L 34 5.5 L 26 3 Z" fill={body} />
       <rect x={34} y={-11} width={6} height={22} rx={2.5} fill={body} />
@@ -147,5 +147,5 @@ export function Probe({ color, angle, active }: { color: 'red' | 'black'; angle:
 /** End point of a probe's cable, relative to its tip, for a given angle. */
 export function probeTail(angle: number): [number, number] {
   const a = (angle * Math.PI) / 180
-  return [Math.cos(a) * 140, Math.sin(a) * 140]
+  return [Math.cos(a) * 140 * 0.86, Math.sin(a) * 140 * 0.86]
 }

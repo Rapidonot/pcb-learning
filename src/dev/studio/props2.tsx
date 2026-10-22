@@ -174,7 +174,7 @@ export function Battery9V() {
 /* Solderless breadboard                                               */
 /* ------------------------------------------------------------------ */
 
-export const BB = { cols: 17, pitch: 2.54, w: 47, d: 41, h: 7 }
+export const BB = { cols: 13, pitch: 2.54, w: 37, d: 41, h: 7 }
 /** World x/z of a hole. row 0–9 (a–j, channel between 4 and 5); rail rows: -2,-1 (back) 10,11 (front). */
 export function bbHole(col: number, row: number): [number, number] {
   const p = BB.pitch

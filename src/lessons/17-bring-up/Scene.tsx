@@ -8,7 +8,7 @@ import { getFootprint } from '@/pcb/footprints'
 import { analyze } from '@/pcb/board'
 import { stages } from '@/pcb/project'
 import { MASKS } from '@/pcb/palette'
-import { ArtDefs, Bridge, ChipTop, HeaderBottom, HeaderTop, LedTop, SoicTop } from './art'
+import { ArtDefs, BarePads, Bridge, ChipTop, HeaderBottom, HeaderTop, LedTop, SoicTop } from './art'
 import { Iron, Probe, SolderWire, ToolDefs, Tweezers, Wick, probeTail } from './tools'
 import { METER_H, METER_JACKS, METER_W, Meter, SUPPLY_H, SUPPLY_POSTS, SUPPLY_W, Supply } from './instruments'
 import {
@@ -88,12 +88,12 @@ function computeLayout(W: number, H: number, phase: Phase): Layout {
         right = SUPPLY_W * s + 30
       } else {
         meter = { x: W - 18 - METER_W * s, y: Math.max(12, (H - tb - METER_H * s) / 2), w: METER_W * s, h: METER_H * s, s }
-        right = METER_W * s + 110
+        right = METER_W * s + 64
       }
     }
     const board = { x: left, y: 14, w: Math.max(200, W - left - right - 52), h: H - tb - 22 }
     const rest: Layout['rest'] = meter
-      ? { red: [meter.x - 54, meter.y + meter.h * 0.42], black: [meter.x - 64, meter.y + meter.h * 0.66] }
+      ? { red: [meter.x - 40, meter.y + meter.h * 0.36], black: [meter.x - 52, meter.y + meter.h * 0.62] }
       : { red: [W + 50, H], black: [W + 50, H] }
     return { mobile, board, palette: { x: board.x + board.w + 8, y: board.y + 4, vertical: true }, meter, supply, rest }
   }
@@ -291,7 +291,14 @@ export function Scene() {
   const vbCur = useRef<Rect>(WHOLE)
   const [focus, setFocus] = useState<string | null>(null)
   const [msg, setMsg] = useState<Msg>(null)
-  const [dialog, setDialog] = useState<'led' | 'turn' | null>(null)
+  const [dialog, setDialogRaw] = useState<'led' | 'turn' | null>(null)
+  const dialogAt = useRef(0)
+  const setDialog = (d: 'led' | 'turn' | null) => {
+    dialogAt.current = performance.now()
+    setDialogRaw(d)
+  }
+  // the tap that opens a dialog must not also press a button inside it
+  const dialogReady = () => performance.now() - dialogAt.current > 450
   const [hover, setHover] = useState<string | null>(null)
   const [iron, setIron] = useState<{ p: V2; press: boolean; instant: boolean } | null>(null)
   const [wick, setWick] = useState<{ p: V2; used: boolean } | null>(null)
@@ -502,7 +509,10 @@ export function Scene() {
       later(() => flash('Row done. Drag-soldering often leaves a bridge: always inspect before powering up.', 'warn', 5200), 600)
     }
     if (isSoldered(next[ref])) {
-      if (ref === 'J1') later(() => doFlip('top', 'J1'), 800)
+      if (ref === 'J1') {
+        later(() => doFlip('top', 'J1'), 800)
+        later(() => fitWhole(), 1500)
+      }
       else
         later(() => {
           setFocus((f) => {
@@ -804,6 +814,7 @@ export function Scene() {
     if (sup.vset > 5.5) return flash('Blinky is designed for 5 V. Turn the voltage down to 5.0 V.', 'warn')
     if (sup.ilim > 0.1) flash('Tip: set a low current limit first, about 0.05 A. If something is shorted, the supply limits the damage.', 'warn', 5200)
     setSup((s) => ({ ...s, on: true }))
+    setMeasured({})
     blinkTime.current = 0
   }
 
@@ -819,8 +830,13 @@ export function Scene() {
   const flipT = side === 'bottom' ? `translate(${BW} 0) scale(-1 1)` : undefined
   const freshOf = (ref: string) => fresh.filter((k) => k.startsWith(ref + '.')).map((k) => k.split('.')[1])
 
+  const barePads = useMemo(
+    () => PADS.filter((p) => p.layers.length === 1 && asm[p.ref].joints[p.num] === 'none'),
+    [asm],
+  )
   const partsLayer = (
     <g transform={flipT}>
+      {side === 'top' && <BarePads pads={barePads} />}
       {side === 'top' && phase === 'assemble' &&
         PARTS.filter((p) => !asm[p.ref].placed).map((p) => {
           const fp = getFootprint(p.fp)
@@ -912,6 +928,8 @@ export function Scene() {
     }
     if (phase === 'inspect') return { text: tool === 'loupe' ? 'Move the magnifier over the joints. Look for dull joints and solder bridges.' : tool === 'wick' ? 'Press the wick onto a bridge to soak the solder up.' : 'Click a dull joint to reflow it.' }
     if (phase === 'test') return { text: shortOk ? 'Short check passed.' : 'Dial to Ω or •))), then drag the red and black probes onto +5V and GND.' }
+    if (sup.on && E.cc) return { text: 'CC is lit: the supply is limiting the current. Something is shorted. Switch off!', tone: 'bad' as const }
+    if (sup.on && !blinked && !(H.oscillates && H.ledPath)) return { text: 'Powered, but the LED stays dark. Measure, don’t guess: work through the checklist.', tone: 'warn' as const }
     return { text: blinked ? 'Blinky is blinking at about 1.5 Hz.' : 'Set 5.0 V and a low current limit, then press OUTPUT.' }
   })()
 
@@ -930,7 +948,7 @@ export function Scene() {
   /* ---------- debug checklist ---------- */
   const mv = (k: string) => measured[k]
   const debugRows = [
-    { id: 'cc', label: 'Supply not in current limit (CC)', state: !sup.on ? null : E.cc ? false : true, hint: E.cc ? 'CC is lit: something draws too much current. Power off and look for a short or bridge.' : 'Power on to check.' },
+    { id: 'cc', label: 'Supply not in current limit (CC)', state: !sup.on ? null : E.cc ? false : true, hint: !sup.on ? 'Power on to check.' : E.cc ? 'CC is lit: something draws too much current. Power off and look for a short or bridge.' : `CV mode, ${Math.round(E.i * 1000)} mA. No short.` },
     { id: 'j1', label: '5 V at J1 (+5V to GND)', state: mv('J1.1') === undefined ? null : mv('J1.1') > 4.7, hint: mv('J1.1') !== undefined ? `Measured ${mv('J1.1').toFixed(2)} V` : 'Meter on V⎓, black on GND, red on J1 +5V.' },
     { id: 'u8', label: '5 V at U1 pin 8 (VCC)', state: mv('U1.8') === undefined ? null : mv('U1.8') > 4.7, hint: mv('U1.8') !== undefined ? `Measured ${mv('U1.8').toFixed(2)} V${mv('U1.8') < 4.7 ? ': the chip is not getting power. Inspect pin 8.' : ''}` : 'Red probe on U1 pin 8.' },
     { id: 'u4', label: 'RESET (U1 pin 4) at 5 V', state: mv('U1.4') === undefined ? null : mv('U1.4') > 4.7, hint: mv('U1.4') !== undefined ? `Measured ${mv('U1.4').toFixed(2)} V${mv('U1.4') < 4.7 ? ': RESET is low, so the chip is held in reset. Inspect pin 4.' : ''}` : 'Red probe on U1 pin 4.' },
@@ -943,18 +961,19 @@ export function Scene() {
       {/* the bench mat */}
       <div className="l17-mat" aria-hidden />
 
-      {/* board */}
+      {/* board (clipped to the mat) */}
+      <div className="l17-clip">
       <div
         ref={boardRef}
         className={`l17-board ${flip !== 'none' ? `is-flip-${flip}` : ''} ${phase === 'test' || phase === 'power' ? 'is-probe' : ''} tool-${tool}`}
-        style={{ left: L.board.x, top: L.board.y, width: L.board.w, height: L.board.h }}
+        style={{ left: L.board.x - 8, top: L.board.y - 8, width: L.board.w, height: L.board.h }}
         onPointerDown={onDown}
         onPointerMove={onMove}
         onPointerUp={onUp}
         onPointerCancel={onUp}
-        onPointerLeave={() => {
+        onPointerLeave={(e) => {
           setHover(null)
-          if (!dragging.current && tool === 'loupe') setLoupe(null)
+          if (!dragging.current && tool === 'loupe' && e.pointerType === 'mouse') setLoupe(null)
         }}
       >
         <svg viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`} width="100%" height="100%" aria-label="Blinky board on the workbench">
@@ -964,6 +983,7 @@ export function Scene() {
           {partsLayer}
           {loupeEl}
         </svg>
+      </div>
       </div>
 
       {/* overlay: tools, probes, cables */}
@@ -1172,14 +1192,15 @@ export function Scene() {
                       key={i}
                       className="l17-ledopt"
                       onClick={() => {
+                        if (!dialogReady()) return
                         setDialog(null)
                         place('D1', rev)
                       }}
                       aria-label={`Option ${i === 0 ? 'A' : 'B'}`}
                     >
-                      <svg viewBox="-3 -2.2 6 4.4">
+                      <svg viewBox="-2.15 -1.45 4.3 2.9">
                         <ArtDefs />
-                        <rect x={-3} y={-2.2} width={6} height={4.4} rx={0.4} fill={MASKS.green.mask} />
+                        <rect x={-3} y={-2.2} width={6} height={4.4} fill={MASKS.green.mask} />
                         <FootprintSilk def={getFootprint('LED0805')} color={MASKS.green.silk} />
                         {getFootprint('LED0805').pads.map((pd) => (
                           <rect key={pd.num} x={pd.x - pd.w / 2} y={pd.y - pd.h / 2} width={pd.w} height={pd.h} rx={0.2} fill="#cfd3d8" />
@@ -1202,6 +1223,7 @@ export function Scene() {
                   <Button
                     variant="accent"
                     onClick={() => {
+                      if (!dialogReady()) return
                       setDialog(null)
                       setAsm((a) => ({ ...a, D1: { ...a.D1, reversed: !a.D1.reversed } }))
                       setFresh((f) => [...f, 'D1.1', 'D1.2'])
@@ -1249,8 +1271,20 @@ export function Scene() {
                     className={`l17-tray__item ${st.placed ? 'is-placed' : ''} ${solderedAll ? 'is-done' : ''} ${focus === ref ? 'is-focus' : ''}`}
                     onClick={() => {
                       if (side === 'bottom' && ref !== 'J1') doFlip('top')
-                      zoomTo(ref, ref === 'J1' && side === 'bottom' ? 'bottom' : 'top')
+                      // first press zooms in; pressing again places the part, then solders its next pad
+                      if (focus !== ref) return zoomTo(ref, ref === 'J1' && side === 'bottom' ? 'bottom' : 'top')
+                      if (!st.placed) {
+                        if (ref === 'D1') setDialog('led')
+                        else place(ref, false)
+                        return
+                      }
+                      const next = Object.entries(st.joints).find(([, j]) => j !== 'good')
+                      if (!next) return
+                      if (ref === 'J1' && side === 'top') return doFlip('bottom', 'J1')
+                      const pad = padByKey(`${ref}.${next[0]}`)
+                      solder(pad.key, toPx([pad.x, pad.y]), false)
                     }}
+                    aria-label={`${ref}, ${DESCR[ref]}: ${solderedAll ? 'soldered' : st.placed ? 'placed, press to solder the next pad' : focus === ref ? 'press again to place' : 'press to zoom in'}`}
                   >
                     <span className="l17-tray__ref mono">{ref}</span>
                     <span className="l17-tray__desc">{DESCR[ref]}</span>

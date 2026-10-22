@@ -29,7 +29,7 @@ export function SchematicSheet({ doc, children }: { doc: SchDoc; children?: Reac
       {grid}
       <rect x={6} y={6} width={SHEET.w - 12} height={SHEET.h - 12} fill="none" stroke="#9c8f78" strokeWidth={1.2} />
       <g transform="translate(6 2) scale(0.97)">
-        <SchematicView doc={doc} showPinNames={false} />
+        <SchematicView doc={doc} />
         {children}
       </g>
       <g transform={`translate(${SHEET.w - 136} ${SHEET.h - 36})`}>

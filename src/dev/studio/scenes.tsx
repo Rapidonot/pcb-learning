@@ -44,7 +44,7 @@ function WhatIsAPcb() {
   const cu = useSvgTex('stack-cu', { ...sz, linear: true }, () => (
     <>
       <rect width={doc.w} height={doc.h} fill="#000" />
-      <CopperArt doc={doc} side="top" fill="#fff" />
+      <CopperArt doc={doc} side="top" fill="#fff" pours={false} />
     </>
   ))
   const mask = useSvgTex('stack-mask', { ...sz, linear: true }, () => (
@@ -66,7 +66,7 @@ function WhatIsAPcb() {
     </>
   ))
   const face = useMemo(() => faceGeometry(doc.w, doc.h, doc.corner), [doc])
-  const gap = 5.2
+  const gap = 12.5
   const corners: [number, number][] = [
     [doc.w / 2 - 0.6, doc.h / 2 - 0.6],
     [-doc.w / 2 + 0.6, doc.h / 2 - 0.6],
@@ -76,11 +76,12 @@ function WhatIsAPcb() {
   return (
     <group>
       <Slab w={doc.w} h={doc.h} corner={doc.corner} maps={{ color: fr4 }} edge="#bfa868" clearcoat={0.1} />
-      {cu && (
-        <mesh geometry={face} rotation={[-Math.PI / 2, 0, 0]} position={[0, THICK + gap, 0]} castShadow receiveShadow>
-          <meshStandardMaterial color={COPPER} metalness={1} roughness={0.3} alphaMap={cu} alphaTest={0.5} side={THREE.DoubleSide} emissive="#ff7a2a" emissiveIntensity={0.08} />
-        </mesh>
-      )}
+      {cu &&
+        [0, 0.09, 0.18].map((dy, i) => (
+          <mesh key={i} geometry={face} rotation={[-Math.PI / 2, 0, 0]} position={[0, THICK + gap - dy, 0]} castShadow={i === 0} receiveShadow>
+            <meshStandardMaterial color={i ? '#b8662e' : COPPER} metalness={1} roughness={0.3} alphaMap={cu} alphaTest={0.5} side={THREE.DoubleSide} />
+          </mesh>
+        ))}
       {mask && (
         <mesh geometry={face} rotation={[-Math.PI / 2, 0, 0]} position={[0, THICK + gap * 2, 0]} castShadow receiveShadow>
           <meshPhysicalMaterial color="#1f7a4f" roughness={0.3} clearcoat={0.7} clearcoatRoughness={0.2} alphaMap={mask} alphaTest={0.5} side={THREE.DoubleSide} />
@@ -91,9 +92,9 @@ function WhatIsAPcb() {
           <mesh geometry={face} rotation={[-Math.PI / 2, 0, 0]} castShadow>
             <meshStandardMaterial color="#fbf8ef" roughness={0.7} alphaMap={silk} alphaTest={0.4} side={THREE.DoubleSide} />
           </mesh>
-          {/* the clear carrier the legend is printed on, so it reads as a layer */}
-          <mesh geometry={face} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.05, 0]}>
-            <meshPhysicalMaterial color="#ffffff" transparent opacity={0.16} roughness={0.1} clearcoat={1} depthWrite={false} side={THREE.DoubleSide} />
+          {/* smoky carrier so the white legend reads as a layer on light backgrounds too */}
+          <mesh geometry={face} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.06, 0]}>
+            <meshPhysicalMaterial color="#7f948d" transparent opacity={0.3} roughness={0.2} clearcoat={1} depthWrite={false} side={THREE.DoubleSide} />
           </mesh>
         </group>
       )}
@@ -196,7 +197,7 @@ function Electricity() {
       })}
       {/* LED */}
       <group position={[(lx0 + lx1) / 2, top - 0.4, lz]}>
-        <LooseLed on legs={3.4} spread={1.27} glow={1.1} />
+        <LooseLed on legs={3.4} spread={1.27} glow={1.35} />
       </group>
     </group>
   )
@@ -222,7 +223,7 @@ function Components() {
       <group position={[12, 0, 5.5]} rotation={[0, 0.62, 0]}>
         <CeramicDisc label="104" />
       </group>
-      <group position={[-11, 0, -3.5]} rotation={[0, 0.6, 0]}>
+      <group position={[-10.5, 0, -3.5]} rotation={[0, 0.6, 0]} scale={0.82}>
         <LooseLed legs={3.2} />
       </group>
     </group>
@@ -317,10 +318,12 @@ const PAPER_W = 56
 const PAPER_H = (PAPER_W * SHEET.h) / SHEET.w
 
 /** sheet coords (schematic units, inside the sheet's transform) → paper-local x/z */
+/** the paper shows a crop of the sheet (around the 555, R3 and the LED) so it reads when small */
+const CROP = { x: 150, y: 34, w: 262, h: 262 * (SHEET.h / SHEET.w) }
 function sheetToPaper(x: number, y: number, w = PAPER_W, h = PAPER_H): [number, number] {
   const sx = 6 + 0.97 * x
   const sy = 2 + 0.97 * y
-  return [(sx / SHEET.w - 0.5) * w, (sy / SHEET.h - 0.5) * h]
+  return [((sx - CROP.x) / CROP.w - 0.5) * w, ((sy - CROP.y) / CROP.h - 0.5) * h]
 }
 
 function useSchematicTex(key: string, drawing = false) {
@@ -329,7 +332,7 @@ function useSchematicTex(key: string, drawing = false) {
     if (drawing) d.wires = d.wires.filter((w) => w.id !== 'w16')
     return d
   }, [drawing])
-  return useSvgTex(key, { w: 2200, h: Math.round((2200 * SHEET.h) / SHEET.w), viewBox: `0 0 ${SHEET.w} ${SHEET.h}` }, () => (
+  return useSvgTex(key, { w: 2200, h: Math.round((2200 * SHEET.h) / SHEET.w), viewBox: `${CROP.x} ${CROP.y} ${CROP.w} ${CROP.h}` }, () => (
     <SchematicSheet doc={doc}>
       {drawing && (
         <g>
@@ -408,34 +411,35 @@ function PartsDatasheets() {
 function SchematicToPcb() {
   const tex = useSchematicTex('sch-read')
   const doc = useMemo(() => stages.placed(), [])
-  const lifts = useMemo(() => Object.fromEntries(doc.parts.map((p, i) => [p.ref, 3.2 + ((i * 7) % 5) * 0.7])), [doc])
+  const lifts = useMemo(() => Object.fromEntries(doc.parts.map((p, i) => [p.ref, 3.5 + ((i * 7) % 5) * 0.8])), [doc])
   const conn = useMemo(() => analyze(doc), [doc])
-  const ox = 22
-  const toW = (x: number, y: number, ref: string): [number, number, number] => [x - doc.w / 2 + ox, THICK + lifts[ref] + 0.15, y - doc.h / 2]
+  const ox = 13
+  const oz = 5
+  const toW = (x: number, y: number, ref: string): [number, number, number] => [x - doc.w / 2 + ox, THICK + lifts[ref] + 0.15, y - doc.h / 2 + oz]
   return (
     <group>
-      <group position={[-22, 0, 2]} rotation={[0, 0.18, 0]}>
+      <group position={[-21, 0, -13]} rotation={[0, 0.3, 0]}>
         <Paper w={34} h={34 * (SHEET.h / SHEET.w)} map={tex} curl={1.6} curlFrom={0.82} />
       </group>
-      <group position={[ox, 0, 0]}>
+      <group position={[ox, 0, oz]}>
         <DocBoard doc={doc} id="s2p" lift={lifts} silk={false} />
       </group>
       {conn.ratsnest.map((r, i) => (
-        <Tube key={i} pts={[toW(r.a.x, r.a.y, r.a.ref), toW(r.b.x, r.b.y, r.b.ref)]} r={0.07} smooth={false} segments={2} material={RATS} />
+        <Tube key={i} pts={[toW(r.a.x, r.a.y, r.a.ref), toW(r.b.x, r.b.y, r.b.ref)]} r={0.11} smooth={false} segments={2} material={RATS} />
       ))}
       <Arrow
         pts={[
-          [-8, 3, -2],
-          [-1, 9, -3],
-          [6, 6.5, -3],
+          [-6, 2, -5],
+          [0, 9, -6],
+          [5, 8, -4],
         ]}
-        r={0.7}
-        head={3.2}
+        r={0.65}
+        head={3}
       />
     </group>
   )
 }
-const RATS = new THREE.MeshStandardMaterial({ color: '#8fd0ff', emissive: '#5fb8ff', emissiveIntensity: 1.6, toneMapped: false })
+const RATS = new THREE.MeshStandardMaterial({ color: '#bfe6ff', emissive: '#6cc0ff', emissiveIntensity: 2.2, toneMapped: false })
 
 /* ------------------------------------------------------------------ */
 /* 10 · Placement                                                      */
@@ -566,12 +570,12 @@ function extrude(shape: THREE.Shape, depth: number, y: number) {
 }
 
 function Vias() {
-  const W = 26
-  const D = 12
-  const rh = 1.35
-  const rp = 2.6
+  const W = 21
+  const D = 9
+  const rh = 1.9
+  const rp = 3.3
   const tw = rp // trace width = pad radius keeps the outlines simple
-  const cu = 0.42
+  const cu = 0.45
   const core = 4.2
   const geos = useMemo(() => {
     const coreS = new THREE.Shape()
@@ -969,7 +973,6 @@ function Gerbers() {
   const layers = [
     { key: 'drill', color: '#8b8f98', art: <DrillArt doc={doc} fill="#fff" /> },
     { key: 'bcu', color: '#3f6fe0', art: <CopperArt doc={doc} side="bottom" fill="#fff" /> },
-    { key: 'mask', color: '#a64fd6', art: <MaskOpeningsArt doc={doc} fill="#fff" /> },
     { key: 'tcu', color: '#e8453c', art: <CopperArt doc={doc} side="top" fill="#fff" pours={false} /> },
     { key: 'silk', color: '#f0c93a', art: <SilkArt doc={doc} fill="#fff" /> },
   ]
@@ -986,20 +989,19 @@ function Gerbers() {
   /* eslint-enable react-hooks/rules-of-hooks */
   const film = useMemo(() => faceGeometry(fw, fh, 1.2), [fw, fh])
   return (
-    <group rotation={[0, -0.35, 0]}>
+    <group rotation={[0, 0.2, 0]}>
       {layers.map((l, i) => {
-        const a = (i - 2) * 0.2
-        // fan around the front-left corner like a hand of cards
-        const pivot = new THREE.Vector3(-fw / 2, 0, fh / 2)
+        // spread like a deck of cards: each film steps up, right and back, with a slight twist
+        const pivot = new THREE.Vector3(-fw / 2 + i * 7, 0, fh / 2 - i * 4.5)
         return (
-          <group key={l.key} position={[pivot.x, i * 1.3, pivot.z]} rotation={[0, a, 0]}>
+          <group key={l.key} position={[pivot.x, i * 3.2, pivot.z]} rotation={[0, -0.06 * i, 0]}>
             <group position={[fw / 2, 0, -fh / 2]}>
               <mesh geometry={film} rotation={[-Math.PI / 2, 0, 0]} castShadow receiveShadow>
                 <meshPhysicalMaterial color={l.color} transparent opacity={0.3} roughness={0.15} clearcoat={1} depthWrite={false} side={THREE.DoubleSide} />
               </mesh>
               {texs[i] && (
                 <mesh geometry={film} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]} castShadow>
-                  <meshStandardMaterial color={l.color} emissive={l.color} emissiveIntensity={0.25} roughness={0.4} alphaMap={texs[i]} alphaTest={0.45} side={THREE.DoubleSide} />
+                  <meshStandardMaterial color={l.color} emissive={l.color} emissiveIntensity={0.45} roughness={0.4} alphaMap={texs[i]} alphaTest={0.45} side={THREE.DoubleSide} />
                 </mesh>
               )}
             </group>
@@ -1047,7 +1049,7 @@ function BringUp() {
   const r3 = doc.parts.find((p) => p.ref === 'R3')!
   const d1 = doc.parts.find((p) => p.ref === 'D1')!
   const tip = new THREE.Vector3(r3.x - doc.w / 2 - 0.2, THICK + 0.55, r3.y - 0.95 - doc.h / 2 - 0.1)
-  const dir = new THREE.Vector3(-0.55, 0.62, -0.56).normalize()
+  const dir = new THREE.Vector3(0.72, 0.46, -0.52).normalize()
   const q = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(1, 0, 0), dir)
   return (
     <group>
@@ -1055,11 +1057,11 @@ function BringUp() {
         <DocBoard doc={doc} id="bringup" />
         <Glow size={15} position={[d1.x - doc.w / 2, 2.6, d1.y - doc.h / 2]} opacity={0.9} />
         <pointLight position={[d1.x - doc.w / 2, 4, d1.y - doc.h / 2]} color="#ff3a1a" intensity={30} distance={14} decay={2} />
-        <group position={tip} quaternion={q} scale={0.75}>
+        <group position={tip} quaternion={q} scale={0.68}>
           <SolderingIron />
         </group>
       </group>
-      <group position={[21, 0, 14]} rotation={[0, 0.5, 0]} scale={0.8}>
+      <group position={[-19, 0, 13]} rotation={[0, 0.7, 0]} scale={0.8}>
         <SolderSpool />
       </group>
     </group>
@@ -1076,7 +1078,7 @@ function Sandbox() {
   return (
     <group rotation={[0, -0.32, 0]}>
       <DocBoard doc={doc} id="sandbox" />
-      <Glow size={16} position={[d1.x - doc.w / 2, 2.6, d1.y - doc.h / 2]} opacity={0.9} />
+      <Glow size={12} position={[d1.x - doc.w / 2, 2.6, d1.y - doc.h / 2]} opacity={0.9} />
       <pointLight position={[d1.x - doc.w / 2, 4, d1.y - doc.h / 2]} color="#ff3a1a" intensity={30} distance={14} decay={2} />
     </group>
   )

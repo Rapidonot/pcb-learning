@@ -1,5 +1,5 @@
-/* Tiny isometric illustrations for each lesson (used in the lesson strip & course map). */
-import type { ReactNode } from 'react'
+/* Lesson thumbnails: pre-rendered 3D images (public/thumbs), with tiny isometric SVG sketches as the fallback. */
+import { useState, type ReactNode } from 'react'
 
 const C = {
   mask: '#1f6b47',
@@ -210,7 +210,27 @@ export const thumbs: Record<string, () => ReactNode> = {
   ),
 }
 
+/**
+ * Lesson thumbnail: a pre-rendered 3D still life from /thumbs/<id>.webp (made by the dev-only
+ * thumbnail studio, see scripts/render-thumbs.mjs), falling back to the SVG sketch above when an
+ * id has no image yet.
+ */
 export function Thumb({ id }: { id: string }) {
+  const [failed, setFailed] = useState<string | null>(null)
   const f = thumbs[id]
+  if (failed !== id) {
+    return (
+      <img
+        className="thumb-img"
+        src={`/thumbs/${id}.webp`}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        draggable={false}
+        onError={() => setFailed(id)}
+        style={{ display: 'block', width: '100%', height: '100%', objectFit: 'contain' }}
+      />
+    )
+  }
   return f ? <>{f()}</> : null
 }

@@ -14,12 +14,12 @@ import './lesson06b.css'
 
 function PackageLineup() {
   const items: { fp: FootprintDef; label: string; note: string; x: number }[] = [
-    { fp: getFootprint('DIP-8'), label: 'DIP-8', note: '2.54 mm pitch · through-hole', x: 9 },
-    { fp: getFootprint('SOIC-8'), label: 'SOIC-8', note: '1.27 mm pitch · easy SMD', x: 28 },
-    { fp: VSSOP8, label: 'VSSOP-8', note: '0.65 mm pitch · tricky by hand', x: 44 },
+    { fp: getFootprint('DIP-8'), label: 'DIP-8', note: '2.54 mm pitch · through-hole', x: 11 },
+    { fp: getFootprint('SOIC-8'), label: 'SOIC-8', note: '1.27 mm pitch · easy SMD', x: 34 },
+    { fp: VSSOP8, label: 'VSSOP-8', note: '0.65 mm pitch · tricky by hand', x: 56 },
   ]
   return (
-    <svg viewBox="0 0 54 22" width="100%" style={{ display: 'block', padding: '18px 14px 6px' }} role="img" aria-label="DIP-8, SOIC-8 and VSSOP-8 footprints to scale">
+    <svg viewBox="0 0 67 22" width="100%" style={{ display: 'block', padding: '18px 14px 6px' }} role="img" aria-label="DIP-8, SOIC-8 and VSSOP-8 footprints to scale">
       <defs>
         <radialGradient id="l6b-fig-mask" cx="0.35" cy="0.25" r="0.9">
           <stop offset="0" stopColor="#2a8358" />
@@ -75,9 +75,8 @@ function Article() {
         ]}
       />
       <p>
-        The pair that trips beginners up is <strong>absolute maximum</strong> versus <strong>recommended</strong>. Think of a
-        car's speedometer: the recommended range is where you drive every day; the absolute maximum is the red line on the
-        rev counter. For the 555 in this lesson, 5 V to 15 V is the everyday range and 18 V is the red line.
+        The pair that trips beginners up is <strong>absolute maximum</strong> versus <strong>recommended</strong>. Think of a car engine's rev counter: the recommended range is where you drive every day, and the absolute maximum is the
+        red line where the engine starts to get damaged. For the 555 in this lesson, 5 V to 15 V is the everyday range and 18 V is the red line.
       </p>
       <Compare
         leftLabel="Design for"

@@ -60,9 +60,9 @@ export function ArtDefs() {
       {/* concave fillet seen from above: bright where it climbs the termination, darker on the flat, bright rim */}
       <linearGradient id="l17-fillet" x1="0" y1="0" x2="1" y2="0">
         <stop offset="0" stopColor="#ffffff" />
-        <stop offset="0.16" stopColor="#e3e7eb" />
-        <stop offset="0.5" stopColor="#9ba2aa" />
-        <stop offset="0.82" stopColor="#c3c8ce" />
+        <stop offset="0.14" stopColor="#e8ecef" />
+        <stop offset="0.5" stopColor="#80878f" />
+        <stop offset="0.8" stopColor="#bfc4ca" />
         <stop offset="1" stopColor="#f2f4f6" />
       </linearGradient>
       <linearGradient id="l17-filletV" x1="0" y1="0" x2="0" y2="1">
@@ -70,6 +70,17 @@ export function ArtDefs() {
         <stop offset="0.4" stopColor="#ffffff" stopOpacity="0" />
         <stop offset="1" stopColor="#000000" stopOpacity="0.18" />
       </linearGradient>
+      <linearGradient id="l17-wet" x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stopColor="#ffffff" stopOpacity="0.85" />
+        <stop offset="0.22" stopColor="#c9ced3" stopOpacity="0.35" />
+        <stop offset="0.7" stopColor="#8a9198" stopOpacity="0.25" />
+        <stop offset="1" stopColor="#ffffff" stopOpacity="0.8" />
+      </linearGradient>
+      <radialGradient id="l17-hasl" cx="0.45" cy="0.4" r="0.75">
+        <stop offset="0" stopColor="#c3c7cb" />
+        <stop offset="0.7" stopColor="#a4a9ae" />
+        <stop offset="1" stopColor="#8c9298" />
+      </radialGradient>
       <radialGradient id="l17-cold" cx="0.4" cy="0.35" r="0.8">
         <stop offset="0" stopColor="#c9c8c1" />
         <stop offset="0.6" stopColor="#a5a49d" />
@@ -140,7 +151,9 @@ export function ArtDefs() {
  * Mirror with side = -1.
  */
 export function ChipFillet({ x0, x1, hh, side, state, anim }: { x0: number; x1: number; hh: number; side: 1 | -1; state: Joint; anim?: boolean }) {
-  if (state === 'none') return null
+  if (state === 'none')
+    // no solder: a thin dark gap where the termination just rests on the bare pad
+    return <rect x={side > 0 ? x0 - 0.02 : -x0 - 0.06} y={-hh} width={0.08} height={hh * 2} fill="#000" opacity={0.35} filter="url(#l17-blur)" />
   const t = `scale(${side} 1)`
   if (state === 'cold' || state === 'lifted') {
     return (
@@ -267,10 +280,12 @@ export function SoicTop({ fp, value, joints, fresh }: { fp: FootprintDef; value:
             {/* solder under & around the foot */}
             {j === 'good' && (
               <g className={isFresh ? 'l17-grow' : undefined}>
-                <rect x={footStart - 0.1} y={-0.3} width={footEnd - footStart + 0.38} height={0.6} rx={0.22} fill="url(#l17-fillet)" />
-                <rect x={footStart - 0.1} y={-0.3} width={footEnd - footStart + 0.38} height={0.6} rx={0.22} fill="url(#l17-filletV)" />
+                <rect x={footStart - 0.2} y={-0.33} width={footEnd - footStart + 0.52} height={0.66} rx={0.26} fill="url(#l17-fillet)" />
+                <rect x={footStart - 0.2} y={-0.33} width={footEnd - footStart + 0.52} height={0.66} rx={0.26} fill="url(#l17-filletV)" />
+                <rect x={footStart - 0.2} y={-0.33} width={footEnd - footStart + 0.52} height={0.66} rx={0.26} fill="none" stroke="#000" strokeOpacity={0.22} strokeWidth={0.03} />
               </g>
             )}
+            {j === 'none' && <rect x={footStart + 0.04} y={-lw / 2 + 0.06} width={footEnd - footStart} height={lw} rx={0.05} fill="#000" opacity={0.45} filter="url(#l17-blur)" />}
             {(j === 'cold' || j === 'lifted') && (
               <ellipse cx={(footStart + footEnd) / 2 + 0.12} cy={0} rx={(footEnd - footStart) / 2 + 0.12} ry={0.3} fill="url(#l17-cold)" filter="url(#l17-grain)" />
             )}
@@ -285,10 +300,12 @@ export function SoicTop({ fp, value, joints, fresh }: { fp: FootprintDef; value:
             </g>
             {j === 'good' && (
               <g className={isFresh ? 'l17-grow' : undefined}>
-                {/* toe meniscus + heel highlight */}
-                <path d={`M ${footEnd - 0.04} ${-lw / 2 - 0.02} Q ${footEnd + 0.26} 0 ${footEnd - 0.04} ${lw / 2 + 0.02} Z`} fill="#eef1f3" opacity={0.9} />
-                <ellipse cx={footStart + 0.04} cy={0} rx={0.05} ry={lw / 2 - 0.04} fill="#fff" opacity={0.6} />
-                {isFresh && <rect className="l17-shine" x={footStart - 0.1} y={-0.3} width={footEnd - footStart + 0.38} height={0.6} fill="#fff" />}
+                {/* solder wets the foot: sheen at heel and toe, meniscus past the toe */}
+                <rect x={footStart - 0.06} y={-lw / 2 - 0.03} width={footEnd - footStart + 0.08} height={lw + 0.06} rx={0.08} fill="url(#l17-wet)" />
+                <path d={`M ${footEnd - 0.03} ${-lw / 2 - 0.05} Q ${footEnd + 0.34} 0 ${footEnd - 0.03} ${lw / 2 + 0.05} Z`} fill="url(#l17-blob)" />
+                <ellipse cx={footEnd + 0.08} cy={-0.06} rx={0.04} ry={0.12} fill="#fff" opacity={0.95} />
+                <ellipse cx={footStart - 0.02} cy={0} rx={0.06} ry={lw / 2 - 0.02} fill="#fff" opacity={0.75} />
+                {isFresh && <rect className="l17-shine" x={footStart - 0.2} y={-0.33} width={footEnd - footStart + 0.52} height={0.66} fill="#fff" />}
               </g>
             )}
           </g>
@@ -381,6 +398,29 @@ export function HeaderBottom({ fp, joints, fresh }: { fp: FootprintDef; joints: 
           </g>
         )
       })}
+    </g>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* Bare HASL pads look matte next to fresh, shiny solder               */
+/* ------------------------------------------------------------------ */
+
+export function BarePads({ pads }: { pads: { key: string; x: number; y: number; w: number; h: number; rot: number }[] }) {
+  return (
+    <g filter="url(#l17-grain)" style={{ pointerEvents: 'none' }}>
+      {pads.map((p) => (
+        <rect
+          key={p.key}
+          x={-p.w / 2}
+          y={-p.h / 2}
+          width={p.w}
+          height={p.h}
+          rx={Math.min(p.w, p.h) * 0.22}
+          fill="url(#l17-hasl)"
+          transform={`translate(${p.x} ${p.y}) rotate(${p.rot})`}
+        />
+      ))}
     </g>
   )
 }

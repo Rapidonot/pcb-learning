@@ -49,7 +49,7 @@ function polyCurve(v: THREE.Vector3[]) {
 }
 
 /** Insulated hook-up wire with stripped, tinned ends. */
-export function Wire({ pts, color, r = 0.55 }: { pts: [number, number, number][]; color: string; r?: number }) {
+export function Wire({ pts, color, r = 0.7 }: { pts: [number, number, number][]; color: string; r?: number }) {
   const m = mats()
   const n = pts.length
   // short bare copper tips
@@ -140,7 +140,7 @@ export function CeramicDisc({ label = '104', color = '#e08a2c' }: { label?: stri
     ctx.fillStyle = color
     ctx.fillRect(0, 0, w, h)
     ctx.fillStyle = 'rgba(40,20,5,0.85)'
-    ctx.font = `600 ${w * 0.26}px "IBM Plex Mono", monospace`
+    ctx.font = `600 ${w * 0.17}px "IBM Plex Mono", monospace`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     ctx.fillText(label, w / 2, h * 0.47)
@@ -401,7 +401,7 @@ export function Paper({ w, h, map, curl = 3, curlFrom = 0.72, side = 'x' }: { w:
   }, [w, h, curl, curlFrom, side])
   return (
     <mesh geometry={geo} castShadow receiveShadow>
-      <meshStandardMaterial key={map ? 1 : 0} map={map ?? undefined} color={map ? '#ffffff' : '#fbfaf6'} roughness={0.88} side={THREE.DoubleSide} />
+      <meshStandardMaterial key={map ? 1 : 0} map={map ?? undefined} color="#f6f2ea" roughness={0.92} side={THREE.DoubleSide} />
     </mesh>
   )
 }

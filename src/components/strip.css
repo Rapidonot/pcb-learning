@@ -48,7 +48,7 @@
 }
 .strip__item {
   flex: none;
-  width: 116px;
+  width: 124px;
   scroll-snap-align: center;
   display: flex;
   flex-direction: column;
@@ -68,11 +68,11 @@
 }
 .strip__thumb {
   position: relative;
-  height: 52px;
+  height: 64px;
   border-radius: 8px;
   background: var(--paper-2);
   border: 1px solid var(--line);
-  padding: 3px 10px;
+  padding: 2px 6px;
 }
 .strip__check {
   position: absolute;
@@ -110,6 +110,9 @@
     display: none;
   }
   .strip__item {
-    width: 96px;
+    width: 104px;
+  }
+  .strip__thumb {
+    height: 56px;
   }
 }

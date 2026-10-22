@@ -16,6 +16,20 @@ import { pendingCount } from './ready'
 export const VIEW_DIR = new THREE.Vector3(0.464, 0.588, 0.663).normalize()
 /** Key light: high, from screen-left and slightly in front, so shadows fall right / back. */
 const KEY_DIR = new THREE.Vector3(-0.62, 1.55, 0.72).normalize()
+/** lighting knobs; overridable from the URL (?key=2&env=0.4…) while tuning */
+const Q = new URLSearchParams(window.location.search)
+const knob = (k: string, d: number) => (Q.has(k) ? +Q.get(k)! : d)
+export const LIGHT = {
+  env: knob('env', 0.42),
+  envRot: knob('envRot', 0),
+  key: knob('key', 2.1),
+  fill: knob('fill', 0.4),
+  rim: knob('rim', 0.6),
+  amb: knob('amb', 0.16),
+  exposure: knob('exp', 0.92),
+  bloom: knob('bloom', 0.55),
+  ao: knob('ao', 2.2),
+}
 const CAM_START: [number, number, number] = [VIEW_DIR.x * 400, VIEW_DIR.y * 400, VIEW_DIR.z * 400]
 
 function StudioEnvironment({ intensity }: { intensity: number }) {
@@ -25,7 +39,7 @@ function StudioEnvironment({ intensity }: { intensity: number }) {
     const env = pmrem.fromScene(new RoomEnvironment(), 0.035).texture
     scene.environment = env
     scene.environmentIntensity = intensity
-    scene.environmentRotation.set(0, -0.6, 0)
+    scene.environmentRotation.set(0, LIGHT.envRot, 0)
     return () => {
       scene.environment = null
       env.dispose()
@@ -155,11 +169,11 @@ function Lights({ framed }: { framed: Framed | null }) {
   const rim = c.clone().add(new THREE.Vector3(-s * 0.6, s * 1.2, -s * 1.8))
   return (
     <>
-      <ambientLight intensity={0.16} color="#fff4e6" />
+      <ambientLight intensity={LIGHT.amb} color="#fff4e6" />
       <directionalLight
         ref={key}
         position={kp}
-        intensity={2.5}
+        intensity={LIGHT.key}
         color="#fff0dc"
         castShadow
         shadow-mapSize={[2048, 2048]}
@@ -168,9 +182,9 @@ function Lights({ framed }: { framed: Framed | null }) {
         shadow-radius={4}
       />
       {/* cool-ish fill from the right keeps the shadow side from going dead */}
-      <directionalLight position={fp} intensity={0.55} color="#e8eeff" />
+      <directionalLight position={fp} intensity={LIGHT.fill} color="#e8eeff" />
       {/* warm rim from behind separates silhouettes */}
-      <directionalLight position={rim} intensity={0.9} color="#ffd9b0" />
+      <directionalLight position={rim} intensity={LIGHT.rim} color="#ffd9b0" />
     </>
   )
 }
@@ -185,7 +199,7 @@ function Floor({ framed }: { framed: Framed }) {
         frames={40}
         temporal={false}
         alphaTest={0.85}
-        opacity={0.62}
+        opacity={0.72}
         scale={s * 3}
         resolution={512}
         color="#3b2a14"
@@ -218,7 +232,7 @@ export interface StageProps {
   bloom?: number
 }
 
-export function Stage({ children, margin = 0.07, ao = 1, exposure = 0.95, bloom = 0.9 }: StageProps) {
+export function Stage({ children, margin = 0.07, ao = 1, exposure = LIGHT.exposure, bloom = LIGHT.bloom }: StageProps) {
   const content = useRef<THREE.Group>(null)
   const [framed, setFramed] = useState<Framed | null>(null)
   return (
@@ -234,13 +248,13 @@ export function Stage({ children, margin = 0.07, ao = 1, exposure = 0.95, bloom 
       style={{ position: 'fixed', inset: 0, background: 'transparent' }}
     >
       <OrthographicCamera makeDefault position={CAM_START} zoom={8} near={1} far={2000} />
-      <StudioEnvironment intensity={0.55} />
+      <StudioEnvironment intensity={LIGHT.env} />
       <Lights framed={framed} />
       <group ref={content}>{children}</group>
       {framed && <Floor framed={framed} />}
       <Director content={content} margin={margin} framed={framed} onFramed={setFramed} />
       <EffectComposer multisampling={8} enableNormalPass={false}>
-        <N8AO aoRadius={1.4 * ao} distanceFalloff={0.7} intensity={2.2} quality="high" color="#1d130a" />
+        <N8AO aoRadius={1.4 * ao} distanceFalloff={0.7} intensity={LIGHT.ao} quality="high" color="#1d130a" />
         <Bloom mipmapBlur luminanceThreshold={1} luminanceSmoothing={0.25} intensity={bloom} />
       </EffectComposer>
     </Canvas>

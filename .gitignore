@@ -8,3 +8,6 @@ dist
 scripts/dev/l[0-9]*
 scripts/dev/sandbox-*
 *.tmp.*
+
+# raw captures from scripts/render-thumbs.mjs (optimised copies live in public/thumbs)
+.thumbs-raw/
