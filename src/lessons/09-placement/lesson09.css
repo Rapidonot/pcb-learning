@@ -235,3 +235,16 @@
     grid-template-columns: 1fr;
   }
 }
+.l09-flow {
+  animation: l09-flow 1.2s linear infinite;
+}
+@keyframes l09-flow {
+  to {
+    stroke-dashoffset: -0.7;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .l09-flow {
+    animation: none;
+  }
+}

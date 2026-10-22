@@ -9,10 +9,9 @@ const Board3D = lazy(() => import('@/pcb/Board3D').then((m) => ({ default: m.Boa
 
 export function CompleteModal({ doc, maskColor, onClose, open3d }: { doc: BoardDoc; maskColor: MaskColor; onClose: () => void; open3d: () => void }) {
   const stats = useMemo(() => {
-    const top = doc.tracks.filter((t) => t.layer === 'top').length
     return [
       { k: 'Track length', v: totalTrackLength(doc).toFixed(1), u: 'mm' },
-      { k: 'Tracks', v: String(doc.tracks.length), u: `${top} top · ${doc.tracks.length - top} bottom` },
+      { k: 'Tracks', v: String(doc.tracks.length), u: 'routed' },
       { k: 'Vias', v: String(doc.vias.length), u: '' },
       { k: 'Board size', v: `${doc.w} × ${doc.h}`, u: 'mm' },
       { k: 'Parts', v: String(doc.parts.length), u: 'placed' },

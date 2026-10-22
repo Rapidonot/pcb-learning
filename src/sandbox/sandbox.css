@@ -61,7 +61,8 @@
   background: var(--card);
   box-shadow: var(--shadow-2);
   overflow: hidden;
-  animation: fade-up 0.45s var(--ease) both;
+  /* opacity only: a transform here would trap position:fixed overlays inside the editor */
+  animation: sbx-fade 0.45s var(--ease) both;
 }
 
 /* ---------- menu bar ---------- */
@@ -343,6 +344,9 @@
   font-weight: 600;
   opacity: 0.55;
 }
+.sbx-tool--phone {
+  display: none;
+}
 .sbx-tools__sep {
   flex: none;
   width: 28px;
@@ -387,6 +391,8 @@
 /* ---------- canvas ---------- */
 .sbx-canvas {
   grid-area: canvas;
+  user-select: none;
+  -webkit-user-select: none;
   position: relative;
   min-width: 0;
   min-height: 0;
@@ -646,6 +652,9 @@
   color: var(--ink);
 }
 
+.sbx-short {
+  display: none;
+}
 .sbx-dot {
   display: inline-block;
   width: 9px;
@@ -2024,8 +2033,22 @@
   .sbx-doc__name {
     font-size: 13px;
   }
-  .sbx-doc__ext {
+  .sbx-doc__ext,
+  .sbx-doc__name,
+  .sbx-doc__badge,
+  .sbx-menu--design,
+  .sbx-bar__group,
+  .sbx-helpbtn {
     display: none;
+  }
+  .sbx-tool--phone {
+    display: flex;
+  }
+  .sbx-drcbtn {
+    padding: 0 10px;
+  }
+  .sbx-doc {
+    padding: 4px;
   }
   .sbx-bar .grow {
     display: none;
@@ -2048,7 +2071,11 @@
     min-width: 0;
   }
   .sbx-viewseg button {
-    padding: 0 8px;
+    padding: 0 7px;
+    gap: 4px;
+  }
+  .sbx-viewseg button span {
+    display: inline;
   }
   .sbx-tools {
     flex-direction: row;
@@ -2063,7 +2090,10 @@
     width: 48px;
     height: 46px;
   }
-  .sbx-tools__sep {
+  .sbx-tool--phone {
+  display: none;
+}
+.sbx-tools__sep {
     width: 1px;
     height: 26px;
     margin: 0 4px;
@@ -2092,6 +2122,8 @@
     margin: 6px 6px 6px;
   }
   .sbx-panel.is-open {
+    /* an abs-pos grid item is sized against its grid area: span the whole grid instead */
+    grid-area: 1 / 1 / -1 / -1;
     position: absolute;
     left: 0;
     right: 0;
@@ -2156,8 +2188,15 @@
     scrollbar-width: none;
     animation: none;
   }
-  .sbx-ctx__title {
+  .sbx-ctx__title,
+  .sbx-ctx .sbx-long {
     display: none;
+  }
+  .sbx-ctx .sbx-short {
+    display: inline;
+  }
+  .sbx-ctx__btn {
+    padding: 0 9px;
   }
   .sbx-hint {
     display: none;

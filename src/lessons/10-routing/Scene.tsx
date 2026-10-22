@@ -409,6 +409,7 @@ export function Scene() {
         fit={fit}
         theme="eda"
         grid={1}
+        zoomControls={!narrow}
         onPointerDown={tool === 'route' ? onDown : undefined}
         onPointerMove={onMove}
         onPointerUp={onUp}

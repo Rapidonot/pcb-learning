@@ -5,6 +5,7 @@ import { Figure, Steps, Menu, Compare } from '@/components/content'
 import { BoardView, FootprintGraphic } from '@/pcb/render'
 import { analyze, partPads, type BoardDoc, type PartInst } from '@/pcb/board'
 import { stages } from '@/pcb/project'
+import { EDA } from '@/pcb/palette'
 import { Scene } from './Scene'
 import { measure } from './metrics'
 import './lesson09.css'
@@ -73,47 +74,81 @@ function GoodVsBad() {
   )
 }
 
-/** U1 with C2 close to pin 8 vs far away, with the current loop shaded. */
+/** U1 with C2 close to pin 8 vs far away. The copper path and the loop it encloses are drawn. */
 function DecouplingFigure() {
-  const make = (c2: PartInst) => {
-    const doc = stages.placed()
-    const u1 = { ...doc.parts.find((p) => p.ref === 'U1')!, x: 9, y: 9 }
-    const pads = partPads(u1, doc.netlist)
-    const p8 = pads.find((p) => p.num === '8')!
-    const p1 = pads.find((p) => p.num === '1')!
-    const cp = partPads(c2, doc.netlist)
-    const vcc = cp.find((p) => p.net === 'VCC')!
-    const gnd = cp.find((p) => p.net === 'GND')!
-    return { u1, c2, loop: [[vcc.x, vcc.y], [p8.x, p8.y], [p1.x, p1.y], [gnd.x, gnd.y]] as [number, number][] }
+  // U1 sits at (9, 9) in both panels; pin 8 is at (11.7, 7.095), pin 1 at (6.3, 7.095)
+  const u1: PartInst = { ref: 'U1', fp: 'SOIC-8', value: 'NE555', x: 9, y: 9.5, rot: 0, side: 'top' }
+  const p8 = partPads(u1, stages.placed().netlist).find((p) => p.num === '8')!
+  const p1 = partPads(u1, stages.placed().netlist).find((p) => p.num === '1')!
+  const near = {
+    c2: { x: 9, y: 4.6, rot: 180 },
+    vcc: [[9.95, 4.6], [p8.x, 4.6 + (p8.x - 9.95)], [p8.x, p8.y]] as [number, number][],
+    gnd: [[p1.x, p1.y], [p1.x, 4.6 + (8.05 - p1.x)], [8.05, 4.6]] as [number, number][],
   }
-  const near = make({ ref: 'C2', fp: 'C0805', value: '100nF', x: 9, y: 4.5, rot: 180, side: 'top' })
-  const far = make({ ref: 'C2', fp: 'C0805', value: '100nF', x: 16, y: 16, rot: 0, side: 'top' })
-  const panel = (d: ReturnType<typeof make>, label: string, color: string) => (
-    <div>
-      <svg viewBox="0 0 20 20" role="img" aria-label={label}>
-        <polygon points={d.loop.map((p) => p.join(',')).join(' ')} fill={color} fillOpacity={0.22} stroke={color} strokeWidth={0.14} strokeLinejoin="round" strokeDasharray="0.4 0.2" />
-        <g transform={`translate(${d.u1.x} ${d.u1.y})`}>
-          <FootprintGraphic fp="SOIC-8" showNumbers />
-        </g>
-        <g transform={`translate(${d.c2.x} ${d.c2.y}) rotate(${d.c2.rot})`}>
-          <FootprintGraphic fp="C0805" />
-        </g>
-        <text x={d.c2.x} y={d.c2.y - 1.5} textAnchor="middle" fill="#f0d84a" className="l09-figlabel">
-          C2
-        </text>
-        <text x={d.u1.x} y={d.u1.y + 0.3} textAnchor="middle" fill="#f0d84a" className="l09-figlabel">
-          U1
-        </text>
-        <text x={1} y={19} fill={color} className="l09-figlabel">
-          {label}
-        </text>
-      </svg>
-    </div>
-  )
+  const far = {
+    c2: { x: 16.5, y: 16.2, rot: 90 },
+    vcc: [[16.5, 15.25], [16.5, p8.y], [p8.x, p8.y]] as [number, number][],
+    gnd: [[p1.x, p1.y], [3.5, p1.y], [3.5, 18.6], [16.5, 18.6], [16.5, 17.15]] as [number, number][],
+  }
+  const pts = (l: [number, number][]) => l.map((p) => p.join(',')).join(' ')
+  const panel = (d: typeof near, label: string, color: string, area: string) => {
+    const id = `l09d-${label.replace(/\W/g, '')}`
+    const loop = [...d.vcc, ...d.gnd]
+    return (
+      <div>
+        <svg viewBox="0 0 20 21" role="img" aria-label={`${label}: ${area}`}>
+          <defs>
+            <radialGradient id={`${id}-bg`} cx="40%" cy="30%" r="90%">
+              <stop offset="0" stopColor="#1c201c" />
+              <stop offset="1" stopColor="#0b0c0b" />
+            </radialGradient>
+            <radialGradient id={`${id}-loop`} cx="50%" cy="50%" r="60%">
+              <stop offset="0" stopColor={color} stopOpacity={0.38} />
+              <stop offset="1" stopColor={color} stopOpacity={0.12} />
+            </radialGradient>
+            <filter id={`${id}-sh`} x="-30%" y="-30%" width="160%" height="160%">
+              <feDropShadow dx="0" dy="0.12" stdDeviation="0.15" floodColor="#000" floodOpacity="0.7" />
+            </filter>
+            <marker id={`${id}-arr`} viewBox="0 0 4 4" refX="2" refY="2" markerWidth="3.2" markerHeight="3.2" orient="auto">
+              <path d="M0 0 L4 2 L0 4 Z" fill={color} />
+            </marker>
+          </defs>
+          <rect width={20} height={21} rx={0.6} fill={`url(#${id}-bg)`} />
+          <polygon points={pts(loop)} fill={`url(#${id}-loop)`} stroke={color} strokeOpacity={0.5} strokeWidth={0.06} strokeDasharray="0.3 0.2" />
+          <g filter={`url(#${id}-sh)`}>
+            <polyline points={pts(d.vcc)} fill="none" stroke={EDA.top} strokeWidth={0.5} strokeLinejoin="round" strokeLinecap="round" />
+            <polyline points={pts(d.gnd)} fill="none" stroke={EDA.top} strokeWidth={0.5} strokeLinejoin="round" strokeLinecap="round" />
+            <g transform={`translate(${u1.x} ${u1.y})`}>
+              <FootprintGraphic fp="SOIC-8" showNumbers />
+            </g>
+            <g transform={`translate(${d.c2.x} ${d.c2.y}) rotate(${d.c2.rot})`}>
+              <FootprintGraphic fp="C0805" />
+            </g>
+          </g>
+          {/* current direction */}
+          <polyline points={pts(d.vcc)} fill="none" stroke={color} strokeWidth={0.09} strokeDasharray="0.35 0.35" markerEnd={`url(#${id}-arr)`} className="l09-flow" />
+          <polyline points={pts(d.gnd)} fill="none" stroke={color} strokeWidth={0.09} strokeDasharray="0.35 0.35" markerEnd={`url(#${id}-arr)`} className="l09-flow" />
+          <line x1={p8.x} y1={p8.y + 0.2} x2={p1.x} y2={p1.y + 0.2} stroke={color} strokeWidth={0.09} strokeDasharray="0.15 0.25" opacity={0.7} />
+          <text x={u1.x} y={u1.y + 0.3} textAnchor="middle" fill={EDA.silkTop} className="l09-figlabel">
+            U1
+          </text>
+          <text x={d.c2.x + (d.c2.rot === 90 ? 1.6 : 0)} y={d.c2.y - (d.c2.rot === 90 ? 0 : 1.6)} textAnchor="middle" dominantBaseline="central" fill={EDA.silkTop} className="l09-figlabel">
+            C2
+          </text>
+          <text x={1} y={20} fill={color} className="l09-figlabel">
+            {label}
+          </text>
+          <text x={19} y={20} fill="rgba(255,255,255,0.55)" textAnchor="end" className="l09-figlabel">
+            {area}
+          </text>
+        </svg>
+      </div>
+    )
+  }
   return (
     <div className="l09-fig2">
-      {panel(near, 'SMALL LOOP', '#4fe0a6')}
-      {panel(far, 'BIG LOOP', '#ffb02e')}
+      {panel(near, 'SMALL LOOP', '#4fe0a6', '≈ 13 mm²')}
+      {panel(far, 'BIG LOOP', '#ffb02e', '≈ 143 mm²')}
     </div>
   )
 }

@@ -119,10 +119,14 @@ function Director({
       cam.updateMatrixWorld(true)
       const s = e.box.getSize(new THREE.Vector3())
       onFramed({ box: e.box, size: Math.max(s.x, s.z, s.y * 0.6) })
+      console.info(`[studio] framed at ${Math.round(performance.now())} ms`)
       return
     }
     after.current++
-    if (after.current === 12) window.__thumbReady = true
+    if (after.current === 6) {
+      window.__thumbReady = true
+      console.info(`[studio] ready at ${Math.round(performance.now())} ms`)
+    }
   })
   return null
 }
@@ -178,23 +182,23 @@ function Floor({ framed }: { framed: Framed }) {
     <group userData={{ noFit: true }}>
       <AccumulativeShadows
         position={[c.x, framed.box.min.y - 0.02, c.z]}
-        frames={120}
+        frames={40}
         temporal={false}
-        alphaTest={0.8}
+        alphaTest={0.85}
         opacity={0.62}
         scale={s * 3}
-        resolution={1024}
+        resolution={512}
         color="#3b2a14"
         colorBlend={2}
       >
         <RandomizedLight
-          amount={8}
+          amount={4}
           radius={s * 0.55}
-          ambient={0.6}
-          intensity={1.15}
-          position={[c.x - s * 0.55, c.y + s * 1.9, c.z + s * 0.55]}
+          ambient={0.55}
+          intensity={4.2}
+          position={[-s * 0.55, s * 1.9, s * 0.55]}
           bias={0.0006}
-          mapSize={1024}
+          mapSize={512}
           size={s * 1.6}
           near={0.1}
           far={s * 8}

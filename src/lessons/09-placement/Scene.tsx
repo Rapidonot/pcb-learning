@@ -157,6 +157,7 @@ export function Scene() {
         fit={fit}
         theme="eda"
         grid={1}
+        zoomControls={!narrow}
         onPointerMove={onMove}
         onPointerUp={onUp}
         ariaLabel="Blinky PCB placement canvas"

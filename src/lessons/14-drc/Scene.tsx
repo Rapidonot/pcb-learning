@@ -739,7 +739,7 @@ export function Scene() {
                     </span>
                     <b>0 errors.</b>
                     <span>
-                      {looseRules ? 'But your rules are looser than the beginner defaults. Loosening rules hides problems instead of fixing them.' : 'The board passes every rule. Ready for Gerbers (Lesson 15).'}
+                      {looseRules ? 'But your rules are looser than the beginner defaults. Loosening rules hides problems instead of fixing them.' : 'The board passes every rule. Ready for the next step: Gerbers.'}
                     </span>
                   </>
                 ) : (

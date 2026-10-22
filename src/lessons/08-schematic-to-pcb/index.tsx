@@ -76,15 +76,8 @@ function ConvertedBoard() {
   const doc = useMemo(() => stages.converted(), [])
   return (
     <div className="l08-fig">
-      <svg viewBox="-2 -2 38 41" style={{ maxWidth: 520, margin: '0 auto' }} role="img" aria-label="Freshly converted Blinky: parts in a row beside the board, joined by airwires">
-        <defs>
-          <radialGradient id="l08-vign" cx="50%" cy="45%" r="70%">
-            <stop offset="0.6" stopColor="#101210" stopOpacity={0} />
-            <stop offset="1" stopColor="#000" stopOpacity={0.5} />
-          </radialGradient>
-        </defs>
+      <svg viewBox="-2 -2 38 41" style={{ maxWidth: 380, margin: '0 auto' }} role="img" aria-label="Freshly converted Blinky: parts in a row beside the board, joined by airwires">
         <BoardView doc={doc} />
-        <rect x={-2} y={-2} width={38} height={41} fill="url(#l08-vign)" pointerEvents="none" />
         <text x={15} y={13} textAnchor="middle" fill="rgba(224,90,214,0.6)" fontSize={1.3} fontFamily="IBM Plex Mono, monospace" letterSpacing={0.15}>
           EMPTY BOARD · 30 × 26 mm
         </text>
@@ -99,7 +92,7 @@ function OutlineAnatomy() {
   const H = 18
   return (
     <div className="l08-fig">
-      <svg viewBox="-6 -5 44 28" style={{ maxWidth: 620, margin: '0 auto' }} role="img" aria-label="A board outline with rounded corners and a slot">
+      <svg viewBox="-6 -5 51 28" style={{ maxWidth: 680, margin: '0 auto' }} role="img" aria-label="A board outline with rounded corners and a slot">
         <defs>
           <pattern id="l08-g" width="1" height="1" patternUnits="userSpaceOnUse">
             <path d="M1 0H0V1" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={0.04} />
@@ -115,8 +108,8 @@ function OutlineAnatomy() {
             <line x1={0} y1={0} x2={0} y2={0.6} stroke="rgba(224,90,214,0.35)" strokeWidth={0.12} />
           </pattern>
         </defs>
-        <rect x={-6} y={-5} width={44} height={28} fill="#101210" />
-        <rect x={-6} y={-5} width={44} height={28} fill="url(#l08-g)" />
+        <rect x={-6} y={-5} width={51} height={28} fill="#101210" />
+        <rect x={-6} y={-5} width={51} height={28} fill="url(#l08-g)" />
         <g filter="url(#l08-oglow)">
           <rect x={0} y={0} width={W} height={H} rx={1.5} fill="url(#l08-boardfill)" stroke={EDA.outline} strokeWidth={0.18} />
           <rect x={21} y={6} width={6} height={1.6} rx={0.8} fill="#050605" stroke={EDA.outline} strokeWidth={0.18} />

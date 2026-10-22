@@ -88,7 +88,7 @@ interface MenuItem {
   sep?: boolean
 }
 
-function Menu({ label, icon, items, testId }: { label: string; icon?: ReactNode; items: MenuItem[]; testId?: string }) {
+function Menu({ label, icon, items, testId, className = '' }: { label: string; icon?: ReactNode; items: MenuItem[]; testId?: string; className?: string }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -105,7 +105,7 @@ function Menu({ label, icon, items, testId }: { label: string; icon?: ReactNode;
     }
   }, [open])
   return (
-    <div className="sbx-menu" ref={ref}>
+    <div className={`sbx-menu ${className}`} ref={ref}>
       <button className={`sbx-menu__btn ${open ? 'is-open' : ''}`} onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-haspopup="menu" data-testid={testId}>
         {icon}
         <span>{label}</span>
@@ -180,12 +180,13 @@ export function MenuBar(p: {
           Blinky<span className="sbx-doc__ext">.PCB</span>
         </span>
         <span className="sbx-doc__badge mono">
-          CAPSTONE · {p.progress}/{p.total}
+          {p.progress}/{p.total} GOALS
         </span>
       </div>
       <nav className="sbx-bar__menus">
         <Menu
           label="Design"
+          className="sbx-menu--design"
           icon={<IconDrc size={15} />}
           testId="menu-design"
           items={[
@@ -204,6 +205,8 @@ export function MenuBar(p: {
             { label: 'Load full reference solution', hint: 'Placed, routed and poured', onClick: p.loadSolution },
             { sep: true, label: '' },
             { label: 'Reset board', hint: 'Back to right after Convert to PCB', danger: true, onClick: p.reset },
+            { sep: true, label: '' },
+            { label: 'Real-time DRC', hint: 'Re-check after every edit', checked: p.realtimeDrc, onClick: p.toggleRealtime },
             { sep: true, label: '' },
             { label: 'Keyboard shortcuts', keys: '?', onClick: p.openHelp },
           ]}
@@ -240,7 +243,7 @@ export function MenuBar(p: {
         <IconSch size={16} />
         <span>Schematic</span>
       </button>
-      <button className="sbx-ibtn" onClick={p.openHelp} aria-label="Keyboard shortcuts" data-tip="Shortcuts (?)">
+      <button className="sbx-ibtn sbx-helpbtn" onClick={p.openHelp} aria-label="Keyboard shortcuts" data-tip="Shortcuts (?)">
         <IconHelp size={17} />
       </button>
     </header>
@@ -269,6 +272,10 @@ export function ToolRail(p: {
   hasSel: boolean
   rotate: () => void
   del: () => void
+  undo: () => void
+  redo: () => void
+  canUndo: boolean
+  canRedo: boolean
 }) {
   return (
     <aside className={`sbx-tools ${p.disabled ? 'is-disabled' : ''}`} aria-label="Tools">
@@ -296,6 +303,14 @@ export function ToolRail(p: {
       <button className="sbx-tool" onClick={p.del} disabled={!p.hasSel || p.disabled} data-tip="Delete (Delete)" data-tip-pos="right" aria-label="Delete selection">
         <IconTrash size={18} />
         <span className="sbx-tool__label">Delete</span>
+      </button>
+      <button className="sbx-tool sbx-tool--phone" onClick={p.undo} disabled={!p.canUndo} aria-label="Undo">
+        <IconUndo size={18} />
+        <span className="sbx-tool__label">Undo</span>
+      </button>
+      <button className="sbx-tool sbx-tool--phone" onClick={p.redo} disabled={!p.canRedo} aria-label="Redo">
+        <IconRedo size={18} />
+        <span className="sbx-tool__label">Redo</span>
       </button>
       <span className="sbx-tools__sep" />
       <div className="sbx-layerpick" role="radiogroup" aria-label="Active layer">
@@ -426,7 +441,8 @@ export function CanvasHud(p: {
   measure: unknown
   clearMeasure: () => void
 }) {
-  const [coachOpen, setCoachOpen] = useState(true)
+  // on phones the coach starts collapsed (title only) to leave room for the board
+  const [coachOpen, setCoachOpen] = useState(() => typeof window === 'undefined' || window.innerWidth > 760)
   const pour = p.newPour ? p.doc.pours.find((q) => q.id === p.newPour) : null
   const one = p.sel.length === 1 ? p.sel[0] : null
   const part = one?.kind === 'part' ? p.doc.parts.find((q) => q.ref === one.id) : null
@@ -468,13 +484,15 @@ export function CanvasHud(p: {
             <i className={`sbx-dot sbx-dot--${p.route.layer}`} /> Routing <b style={{ color: netInfo[p.route.net ?? '']?.color }}>{p.route.net ?? 'track'}</b>
           </span>
           <button className="sbx-ctx__btn" onClick={p.backspaceRoute} data-tip="Remove last corner (Backspace)">
-            Undo corner
+            <span className="sbx-long">Undo corner</span>
+            <span className="sbx-short">Undo</span>
           </button>
           <button className="sbx-ctx__btn" onClick={p.cycleWidth} data-tip="Cycle width (Shift+W)">
             {p.route.width.toFixed(2)} mm
           </button>
           <button className="sbx-ctx__btn" onClick={p.switchLayer} data-tip="Via + other layer (V, or T / B)">
-            Via → {p.route.layer === 'top' ? 'bottom' : 'top'}
+            <span className="sbx-long">Via → {p.route.layer === 'top' ? 'bottom' : 'top'}</span>
+            <span className="sbx-short">Via</span>
           </button>
           <button className="sbx-ctx__btn is-primary" onClick={p.finishRoute} data-tip="Finish (Esc / right-click)">
             Finish

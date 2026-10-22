@@ -1,4 +1,4 @@
-/* Lesson 14: the finished Blinky with six deliberate mistakes, plus small editor helpers
+/* DRC lesson: the finished Blinky with six deliberate mistakes, plus small editor helpers
  * (rich DRC results, culprit finding, rubber-band part dragging, "route this airwire"). */
 import {
   analyze,

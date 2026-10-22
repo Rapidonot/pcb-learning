@@ -24,66 +24,138 @@ function RoutedBlinky() {
   )
 }
 
-/** Three ways to turn a corner. */
-function Corners() {
-  const pad = (x: number, y: number) => <rect x={x - 0.7} y={y - 0.7} width={1.4} height={1.4} rx={0.3} fill={EDA.top} />
-  const panel = (d: string, label: string, note?: string) => (
-    <div>
-      <svg viewBox="0 0 10 8" role="img" aria-label={label}>
-        <rect width={10} height={8} rx={0.4} fill="#101210" />
-        <path d={d} fill="none" stroke={EDA.top} strokeWidth={0.6} strokeLinecap="round" strokeLinejoin="round" />
-        {pad(1.5, 6.3)}
-        {pad(8.5, 1.7)}
-        {note && (
-          <text x={5} y={7.5} fontSize={0.62} textAnchor="middle" fill="#c9c9c9" className="l10-figtext">
-            {note}
-          </text>
-        )}
-      </svg>
-      <div className="l10-corners__lab">{label}</div>
-    </div>
+/** Shared SVG defs for the premium EDA-style article art. */
+function CopperDefs({ id }: { id: string }) {
+  return (
+    <defs>
+      <linearGradient id={`${id}-cu`} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stopColor="#ff7a6e" />
+        <stop offset="0.45" stopColor="#e8453c" />
+        <stop offset="1" stopColor="#b8302a" />
+      </linearGradient>
+      <linearGradient id={`${id}-cuh`} x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stopColor="#ff7a6e" />
+        <stop offset="0.5" stopColor="#e8453c" />
+        <stop offset="1" stopColor="#b8302a" />
+      </linearGradient>
+      <radialGradient id={`${id}-bg`} cx="40%" cy="30%" r="90%">
+        <stop offset="0" stopColor="#1c201c" />
+        <stop offset="1" stopColor="#0b0c0b" />
+      </radialGradient>
+      <pattern id={`${id}-grid`} width="10" height="10" patternUnits="userSpaceOnUse">
+        <path d="M10 0H0V10" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth={0.5} />
+      </pattern>
+      <filter id={`${id}-sh`} x="-20%" y="-20%" width="140%" height="140%">
+        <feDropShadow dx="0" dy="1.2" stdDeviation="1.4" floodColor="#000" floodOpacity="0.6" />
+        <feDropShadow dx="0" dy="0" stdDeviation="2.2" floodColor="#ff4b3e" floodOpacity="0.18" />
+      </filter>
+    </defs>
   )
+}
+
+/** Three ways to turn a corner (units: 0.1 mm). */
+function Corners() {
+  const pad = (x: number, y: number, id: string) => (
+    <g>
+      <rect x={x - 7} y={y - 7} width={14} height={14} rx={3} fill={`url(#${id}-cu)`} />
+      <rect x={x - 5.5} y={y - 5.8} width={11} height={3} rx={1.5} fill="#fff" opacity={0.18} />
+    </g>
+  )
+  const panel = (d: string, label: string, len: string, best?: boolean) => {
+    const id = `l10c-${label.replace(/[^a-z0-9]/gi, '')}`
+    return (
+      <div>
+        <svg viewBox="0 0 100 80" role="img" aria-label={`${label} corner, ${len}`}>
+          <CopperDefs id={id} />
+          <rect width={100} height={80} rx={4} fill={`url(#${id}-bg)`} />
+          <rect width={100} height={80} rx={4} fill={`url(#${id}-grid)`} />
+          <g filter={`url(#${id}-sh)`}>
+            <path d={d} fill="none" stroke={`url(#${id}-cuh)`} strokeWidth={6} strokeLinecap="round" strokeLinejoin="round" />
+            <path d={d} fill="none" stroke="#fff" strokeOpacity={0.16} strokeWidth={1.4} strokeLinecap="round" strokeLinejoin="round" transform="translate(-0.8 -0.8)" />
+            {pad(15, 63, id)}
+            {pad(85, 17, id)}
+          </g>
+          <g transform="translate(50 73)">
+            <rect x={-17} y={-6} width={34} height={11} rx={5.5} fill={best ? 'rgba(79,224,166,0.14)' : 'rgba(255,255,255,0.07)'} stroke={best ? 'rgba(79,224,166,0.5)' : 'rgba(255,255,255,0.18)'} strokeWidth={0.6} />
+            <text y={0.4} fontSize={6.2} textAnchor="middle" dominantBaseline="central" fill={best ? '#4fe0a6' : '#cfcfcf'} className="l10-figtext">
+              {len}
+            </text>
+          </g>
+        </svg>
+        <div className="l10-corners__lab">{label}</div>
+      </div>
+    )
+  }
   return (
     <div className="l10-corners">
-      {panel('M 1.5 6.3 L 1.5 1.7 L 8.5 1.7', '90°', 'longest path')}
-      {panel('M 1.5 6.3 L 1.5 4.3 L 4.1 1.7 L 8.5 1.7', '45° (the norm)')}
-      {panel('M 1.5 6.3 L 1.5 4.7 A 3 3 0 0 1 4.5 1.7 L 8.5 1.7', 'Arc')}
+      {panel('M 15 63 L 15 17 L 85 17', '90°', '11.6 mm')}
+      {panel('M 15 63 L 15 43 L 41 17 L 85 17', '45° (the norm)', '10.1 mm', true)}
+      {panel('M 15 63 L 15 47 A 30 30 0 0 1 45 17 L 85 17', 'Arc', '10.3 mm')}
     </div>
   )
 }
 
-/** Clearance & edge distance, to scale (units: mm). */
+/** Clearance & edge distance, to scale (units: 0.01 mm, so 100 = 1 mm). */
 function ClearanceFigure() {
-  const dim = (x1: number, x2: number, y: number, label: string, color = '#9fe3ff') => (
+  const id = 'l10clr'
+  const edge = 30
+  const A = [edge + 30, edge + 55] // 0.25 mm track, 0.3 mm from the edge
+  const B = [A[1] + 20, A[1] + 45] // 0.2 mm gap, 0.25 mm track
+  const C = [B[1] + 20, B[1] + 70] // 0.2 mm gap, 0.5 mm power track
+  const padX = C[1] + 20 + 40 // round pad of another net, 0.2 mm away
+  const dim = (x1: number, x2: number, y: number, label: string, color: string) => (
     <g>
-      <line x1={x1} x2={x2} y1={y} y2={y} stroke={color} strokeWidth={0.02} />
-      <line x1={x1} x2={x1} y1={y - 0.08} y2={y + 0.08} stroke={color} strokeWidth={0.02} />
-      <line x1={x2} x2={x2} y1={y - 0.08} y2={y + 0.08} stroke={color} strokeWidth={0.02} />
-      <text x={(x1 + x2) / 2} y={y - 0.1} fontSize={0.13} textAnchor="middle" fill={color} className="l10-figtext">
+      <line x1={x1} x2={x2} y1={y} y2={y} stroke={color} strokeWidth={0.8} />
+      <line x1={x1} x2={x1} y1={y - 4} y2={y + 4} stroke={color} strokeWidth={0.8} />
+      <line x1={x2} x2={x2} y1={y - 4} y2={y + 4} stroke={color} strokeWidth={0.8} />
+      <text x={(x1 + x2) / 2} y={y - 6} fontSize={8.5} textAnchor="middle" fill={color} className="l10-figtext">
         {label}
       </text>
     </g>
   )
-  // vertical traces: edge at x=0, trace A centre 0.6 (0.25 wide), trace B 0.25 wide with 0.2 gap, power 0.5 wide
-  const a = 0.6
-  const b = a + 0.25 + 0.2
-  const c = b + 0.125 + 0.2 + 0.25
+  const track = ([x0, x1]: number[]) => (
+    <g>
+      <rect x={x0} y={90} width={x1 - x0} height={160} rx={(x1 - x0) / 2} fill={`url(#${id}-cuh)`} />
+      <rect x={x0 + (x1 - x0) * 0.18} y={96} width={(x1 - x0) * 0.16} height={150} rx={2} fill="#fff" opacity={0.15} />
+    </g>
+  )
   return (
     <div style={{ padding: 16 }}>
-      <svg viewBox="-0.3 -0.2 2.6 1.6" width="100%" style={{ display: 'block', maxWidth: 620, margin: '0 auto', background: '#101210', borderRadius: 8 }} role="img" aria-label="Clearance between traces and to the board edge">
-        <rect x={-0.3} y={-0.2} width={0.3} height={1.8} fill="rgba(255,255,255,0.04)" />
-        <line x1={0} x2={0} y1={-0.2} y2={1.4} stroke={EDA.outline} strokeWidth={0.03} />
-        <text x={-0.15} y={1.3} fontSize={0.1} fill={EDA.outline} textAnchor="middle" className="l10-figtext" transform="rotate(-90 -0.15 1.3)">
+      <svg viewBox="0 0 300 200" width="100%" style={{ display: 'block', maxWidth: 640, margin: '0 auto', borderRadius: 10 }} role="img" aria-label="Clearance between traces, a pad and the board edge, to scale">
+        <CopperDefs id={id} />
+        <rect width={300} height={200} fill={`url(#${id}-bg)`} />
+        <rect width={300} height={200} fill={`url(#${id}-grid)`} />
+        {/* outside the board */}
+        <rect x={0} y={0} width={edge} height={200} fill="#050605" />
+        <line x1={edge} x2={edge} y1={0} y2={200} stroke={EDA.outline} strokeWidth={1.6} style={{ filter: 'drop-shadow(0 0 2px rgba(224,90,214,0.8))' }} />
+        <text x={edge / 2} y={150} fontSize={8} textAnchor="middle" fill={EDA.outline} className="l10-figtext" transform={`rotate(-90 ${edge / 2} 150)`}>
           BOARD EDGE
         </text>
-        <line x1={a} x2={a} y1={0.5} y2={1.4} stroke={EDA.top} strokeWidth={0.25} />
-        <line x1={b} x2={b} y1={0.5} y2={1.4} stroke={EDA.top} strokeWidth={0.25} />
-        <line x1={c} x2={c} y1={0.5} y2={1.4} stroke={EDA.top} strokeWidth={0.5} />
-        {dim(0, a - 0.125, 0.4, '≥ 0.3', '#ffd166')}
-        {dim(a + 0.125, b - 0.125, 0.4, '0.2 gap')}
-        {dim(b + 0.125, c - 0.25, 0.4, '0.2 gap')}
-        {dim(a - 0.125, a + 0.125, 0.18, '0.25', '#ffb4ae')}
-        {dim(c - 0.25, c + 0.25, 0.18, '0.5 (power)', '#ffb4ae')}
+        <g filter={`url(#${id}-sh)`}>
+          {track(A)}
+          {track(B)}
+          {track(C)}
+          <circle cx={padX} cy={150} r={40} fill="#b9b9b9" />
+          <circle cx={padX} cy={150} r={20} fill="#0b0c0b" />
+          <circle cx={padX - 12} cy={136} r={9} fill="#fff" opacity={0.18} />
+        </g>
+        {/* clearance halos */}
+        {[A, B, C].map((t, i) => (
+          <rect key={i} x={t[0] - 20} y={70} width={t[1] - t[0] + 40} height={180} rx={(t[1] - t[0]) / 2 + 20} fill="none" stroke="rgba(159,227,255,0.25)" strokeWidth={0.8} strokeDasharray="3 2" />
+        ))}
+        {dim(A[0], A[1], 34, '0.25', '#ffb4ae')}
+        {dim(B[0], B[1], 34, '0.25', '#ffb4ae')}
+        {dim(C[0], C[1], 34, '0.5 power', '#ffb4ae')}
+        {dim(edge, A[0], 66, '≥0.3', '#ffd166')}
+        {dim(A[1], B[0], 66, '0.2', '#9fe3ff')}
+        {dim(B[1], C[0], 66, '0.2', '#9fe3ff')}
+        {dim(C[1], padX - 40, 100, '0.2', '#9fe3ff')}
+        <text x={padX} y={196} fontSize={7.5} textAnchor="middle" fill="#cfcfcf" className="l10-figtext">
+          pad, another net
+        </text>
+        <text x={292} y={14} fontSize={7.5} textAnchor="end" fill="rgba(255,255,255,0.5)" className="l10-figtext">
+          mm · to scale
+        </text>
       </svg>
     </div>
   )
@@ -126,7 +198,7 @@ function Article() {
         the job of a wire, so it has to be wide enough for its current and far enough from its neighbours.
       </p>
 
-      <Figure label="Fig 1" caption="Blinky fully routed. Power (VCC and GND) runs in 0.5 mm tracks and signals in 0.25 mm. One VCC connection hops to the bottom layer (blue) through two vias, which is the next lesson, Two layers & vias." bg="eda">
+      <Figure label="Fig 1" caption="Blinky fully routed. Power (VCC and GND) runs in 0.5 mm tracks and signals in 0.25 mm. One VCC connection hops to the bottom layer (blue) through two vias. That's the next lesson, Two layers & vias." bg="eda">
         <RoutedBlinky />
       </Figure>
 
@@ -171,7 +243,7 @@ function Article() {
         0.1 mm, but 0.2 mm keeps you comfortably inside their limits and is easy to solder. Keep copper away from the
         board edge too: the board is cut out of a larger panel, and copper too close to the cut can be exposed or torn.
       </p>
-      <Figure label="Fig 2" caption="Clearance to scale, in millimetres. Two 0.25 mm signal tracks and a 0.5 mm power track, each 0.2 mm apart, with at least 0.3 mm to the board edge." bg="eda">
+      <Figure label="Fig 2" caption="Clearance to scale, in millimetres. Two 0.25 mm signal tracks, a 0.5 mm power track and a through-hole pad, each 0.2 mm from its neighbour (dashed halos), with at least 0.3 mm to the board edge." bg="eda">
         <ClearanceFigure />
       </Figure>
 
@@ -181,7 +253,7 @@ function Article() {
         room, and makes it easier to squeeze traces side by side. It's also the convention, so it simply looks right to
         anyone who reviews your board.
       </p>
-      <Figure label="Fig 3" caption="Three ways to join the same two pads. EasyEDA's L key cycles between corner styles while you route." bg="eda">
+      <Figure label="Fig 3" caption="Three ways to join the same two pads, with the length of each path. EasyEDA's L key cycles between corner styles while you route." bg="eda">
         <Corners />
       </Figure>
       <Callout kind="tip" title="The “acid trap” myth">

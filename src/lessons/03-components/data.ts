@@ -115,7 +115,7 @@ export const PARTS: PartInfo[] = [
   {
     id: 'diode',
     name: 'Diode',
-    variant: 'Through-hole, axial (1N4007)',
+    variant: 'Through-hole, axial',
     mount: 'THT',
     letter: 'D',
     kind: 'Active',
@@ -188,7 +188,7 @@ export const PARTS: PartInfo[] = [
   {
     id: 'button',
     name: 'Push button',
-    variant: 'Through-hole, 6 × 6 mm tactile',
+    variant: 'Through-hole, 6 mm tactile',
     mount: 'THT',
     letter: 'SW',
     kind: 'Electromechanical',

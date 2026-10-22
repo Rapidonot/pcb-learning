@@ -3,7 +3,7 @@ import { useId, type ReactNode } from 'react'
 import { box, cylSide, ellR, faceLeft, faceTop, iso, pts, type V2, type V3 } from './iso'
 import type { PartId } from './data'
 
-export const ART_VB = '-50 -42 100 84'
+export const ART_VB = '-44 -36 88 72'
 
 const P = (p: V3) => iso(p[0], p[1], p[2])
 const poly = (ps: V3[]) => pts(ps.map(P))
@@ -511,14 +511,30 @@ function Button() {
 
 const ARTS: Record<PartId, () => ReactNode> = {
   'res-tht': AxialResistor,
-  'res-smd': () => <Chip />,
-  'cap-cer': () => <Chip cap />,
+  'res-smd': () => (
+    <g transform="scale(1.25)">
+      <Chip />
+    </g>
+  ),
+  'cap-cer': () => (
+    <g transform="scale(1.25)">
+      <Chip cap />
+    </g>
+  ),
   'cap-elec': Electrolytic,
   led: Led5mm,
   diode: Diode,
   'ic-dip': Dip8,
-  'ic-soic': Soic8,
-  transistor: Sot23,
+  'ic-soic': () => (
+    <g transform="scale(1.15)">
+      <Soic8 />
+    </g>
+  ),
+  transistor: () => (
+    <g transform="scale(1.3)">
+      <Sot23 />
+    </g>
+  ),
   header: Header2,
   button: Button,
 }

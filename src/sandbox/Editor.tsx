@@ -1,4 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { analyze, beginnerRules, drc as runDrcEngine, newId, type BoardDoc, type Layer, type Pour, type Track } from '@/pcb/board'
 import { placed as refPlaced, stages } from '@/pcb/project'
 import { dist, type Vec } from '@/pcb/geom'
@@ -26,6 +27,16 @@ const TOOL_NAMES: Record<Tool, string> = {
   pour: 'Copper region',
   measure: 'Measure',
   highlight: 'Highlight net',
+}
+
+/** leave room for the coach card (top-left on desktop, across the top on phones) */
+function framing(b: { x: number; y: number; w: number; h: number }) {
+  const wide = typeof window !== 'undefined' && window.innerWidth > 900
+  const phone = typeof window !== 'undefined' && window.innerWidth <= 760
+  const left = wide ? 15 : 0
+  const top = phone ? 6 : 3
+  const right = phone ? 4 : 1
+  return { x: b.x - left, y: b.y - top, w: b.w + left + right, h: b.h + top + 3 }
 }
 
 const clone = <T,>(v: T): T => JSON.parse(JSON.stringify(v))
@@ -85,7 +96,7 @@ export function Editor() {
 
   const checklist = useMemo(() => computeChecklist(doc, conn, drcState, viewed3d), [doc, conn, drcState, viewed3d])
   const selectedRefs = useMemo(() => sel.filter((s) => s.kind === 'part').map((s) => s.id), [sel])
-  const fitRect = useMemo(() => docBounds(doc), [doc])
+  const fitRect = useMemo(() => framing(docBounds(doc)), [doc])
 
   const once = (key: string, fn: () => void) => {
     if (tipShown.current.has(key)) return
@@ -103,18 +114,23 @@ export function Editor() {
 
   /* ---------------- live feedback ---------------- */
   const prevComplete = useRef<Set<string>>(conn.complete)
+  const prevAir = useRef(conn.ratsnest.length)
   useEffect(() => {
     const prev = prevComplete.current
     prevComplete.current = conn.complete
     if (bulkChange.current) {
       bulkChange.current = false
+      prevAir.current = conn.ratsnest.length
       return
     }
     const fresh = [...conn.complete].filter((n) => !prev.has(n))
+    const left = conn.ratsnest.length
     if (fresh.length && fresh.length <= 2) {
-      const left = conn.ratsnest.length
       toast({ kind: 'success', title: `Net ${fresh.join(' + ')} routed`, body: left ? `${left} airwire${left === 1 ? '' : 's'} to go.` : 'No airwires left. Nice routing.' })
+    } else if (left < prevAir.current && !fresh.length) {
+      toast({ kind: 'success', title: 'Connected', body: `${left} airwire${left === 1 ? '' : 's'} to go.` }, 2200)
     }
+    prevAir.current = left
     if (conn.shorts.length) once(`short:${conn.shorts[0].nets.join()}`, () => toast({ kind: 'error', title: 'Short circuit', body: `Copper now joins ${conn.shorts[0].nets.join(' and ')}. Undo with Ctrl+Z.` }, 4500))
   }, [conn]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -220,7 +236,6 @@ export function Editor() {
     const next = extendRoute(r, snap.pt, prefs.corner)
     if (snap.ok) {
       finishRoute(next)
-      toast({ kind: 'info', title: `Connected ${next.net ?? ''}`.trim(), body: `${r.from} → ${snap.label ?? 'copper'}` }, 2200)
       return
     }
     setRoute(next)
@@ -238,7 +253,7 @@ export function Editor() {
     setRoute({ ...next, done, vias: [...next.vias, via], pts: [last], layer })
     setActiveLayer(layer)
     once('via-mid', () =>
-      toast({ kind: 'info', title: why === 'via' ? 'Via dropped' : 'Layer switched', body: `A via carries the track to the ${layer} layer. Keep clicking to route on ${layer}.` }, 3600),
+      toast({ kind: 'success', title: why === 'via' ? 'Via dropped' : 'Layer switched', body: `A via carries the track to the ${layer} layer. Keep clicking to route on ${layer}.` }, 3600),
     )
   }
 
@@ -253,7 +268,7 @@ export function Editor() {
         setRoute({ ...r, done: [...r.done, curTrack(r)], pts: [last], width: w })
       } else setRoute({ ...r, width: w })
     }
-    toast({ kind: 'info', title: 'Track width', body: `${w.toFixed(2)} mm${w >= 0.5 ? ' (good for power and GND)' : ' (good for signals)'}` }, 1600)
+    toast({ kind: 'success', title: 'Track width', body: `${w.toFixed(2)} mm${w >= 0.5 ? ' (good for power and GND)' : ' (good for signals)'}` }, 1600)
   }
 
   const backspaceRoute = () => {
@@ -291,7 +306,7 @@ export function Editor() {
     (ref: string, side?: Layer) => {
       store.commit((d) => ({ ...d, parts: d.parts.map((p) => (p.ref === ref ? { ...p, side: side ?? otherLayer(p.side) } : p)) }))
       const p = store.get().parts.find((q) => q.ref === ref)
-      if (p) toast({ kind: 'info', title: `${ref} on the ${p.side} side`, body: p.side === 'bottom' ? 'Its pads are now bottom copper (blue). Route to them on the bottom layer.' : 'Back on top.' }, 2600)
+      if (p) toast({ kind: 'success', title: `${ref} on the ${p.side} side`, body: p.side === 'bottom' ? 'Its pads are now bottom copper (blue). Route to them on the bottom layer.' : 'Back on top.' }, 2600)
     },
     [store],
   )
@@ -315,7 +330,7 @@ export function Editor() {
     }))
     setSel([])
     const n = ids.track.size + ids.via.size + ids.pour.size
-    toast({ kind: 'info', title: 'Deleted', body: `${n} item${n === 1 ? '' : 's'} removed. Ctrl+Z to undo.` }, 1800)
+    toast({ kind: 'success', title: 'Deleted', body: `${n} item${n === 1 ? '' : 's'} removed. Ctrl+Z to undo.` }, 1800)
   }, [sel, store])
 
   const updatePour = useCallback(
@@ -327,7 +342,7 @@ export function Editor() {
     bulkChange.current = true
     store.commit((d) => ({ ...d, parts: clone(refPlaced) }))
     setSel([])
-    toast({ kind: 'info', title: 'Reference placement loaded', body: 'Every part is where the course puts it. Ctrl+Z to undo.' })
+    toast({ kind: 'success', title: 'Reference placement loaded', body: 'Every part is where the course puts it. Ctrl+Z to undo.' })
     window.setTimeout(() => canvasRef.current?.zoomTo({ x: -1, y: -2, w: 32, h: 29 }), 30)
   }, [store])
 
@@ -337,7 +352,7 @@ export function Editor() {
     store.commit(() => stages.poured())
     setSel([])
     setHighlightNet(null)
-    toast({ kind: 'info', title: 'Reference solution loaded', body: 'Placed, routed and poured. Run Design › Check DRC to confirm it is clean.' }, 4200)
+    toast({ kind: 'success', title: 'Reference solution loaded', body: 'Placed, routed and poured. Run Design › Check DRC to confirm it is clean.' }, 4200)
     window.setTimeout(() => canvasRef.current?.zoomTo({ x: -1, y: -2, w: 32, h: 29 }), 30)
   }, [store, setRoute])
 
@@ -351,7 +366,7 @@ export function Editor() {
     setDrc(null)
     setViewed3d(false)
     setFocus(null)
-    toast({ kind: 'info', title: 'Board reset', body: 'Back to right after Convert to PCB. Ctrl+Z brings your work back.' }, 3600)
+    toast({ kind: 'success', title: 'Board reset', body: 'Back to right after Convert to PCB. Ctrl+Z brings your work back.' }, 3600)
     window.setTimeout(() => canvasRef.current?.zoomTo(docBounds(stages.converted())), 30)
   }, [store, setRoute])
 
@@ -367,7 +382,7 @@ export function Editor() {
   const focusDrc = useCallback((at: Vec, items: string[]) => {
     setFocus(at)
     if (view !== 'eda') setView('eda')
-    canvasRef.current?.zoomTo({ x: at[0] - 3, y: at[1] - 3, w: 6, h: 6 }, { minW: 12 })
+    canvasRef.current?.zoomTo({ x: at[0] - 3, y: at[1] - 3, w: 6, h: 6 }, { minW: 20 })
     const next: Sel[] = []
     for (const it of items) {
       const [k, id] = [it.slice(0, it.indexOf(':')), it.slice(it.indexOf(':') + 1)]
@@ -559,7 +574,7 @@ export function Editor() {
         const moved = now.parts.filter((p) => d.refs.includes(p.ref))
         if (moved.length === 1 && partOnBoard(moved[0], now)) {
           const nOn = now.parts.filter((p) => partOnBoard(p, now)).length
-          if (nOn === 1) toast({ kind: 'info', title: `${moved[0].ref} is on the board`, body: 'Now bring the parts its airwires point to close to it.' })
+          if (nOn === 1) toast({ kind: 'success', title: `${moved[0].ref} is on the board`, body: 'Now bring the parts its airwires point to close to it.' })
         }
       }
       return
@@ -611,7 +626,7 @@ export function Editor() {
         return
       }
       store.commit((doc0) => ({ ...doc0, vias: [...doc0.vias, v] }))
-      once('via-tip', () => toast({ kind: 'info', title: 'Via placed', body: '0.6 mm pad, 0.3 mm drill. Route a track to it from each layer to hop between sides.' }, 3600))
+      once('via-tip', () => toast({ kind: 'success', title: 'Via placed', body: '0.6 mm pad, 0.3 mm drill. Route a track to it from each layer to hop between sides.' }, 3600))
       return
     }
     if (tool === 'highlight') {
@@ -742,7 +757,7 @@ export function Editor() {
         const order: CornerMode[] = ['45', '45d', '90']
         const next = order[(order.indexOf(prefs.corner) + 1) % order.length]
         setPrefs((p) => ({ ...p, corner: next }))
-        toast({ kind: 'info', title: 'Routing corner', body: next === '90' ? '90°' : next === '45d' ? '45°, diagonal first' : '45°, straight first' }, 1400)
+        toast({ kind: 'success', title: 'Routing corner', body: next === '90' ? '90°' : next === '45d' ? '45°, diagonal first' : '45°, straight first' }, 1400)
         break
       }
       case 'KeyS':
@@ -857,7 +872,7 @@ export function Editor() {
         total={checklist.items.length}
       />
 
-      <ToolRail tool={tool} setTool={setTool} activeLayer={activeLayer} setActiveLayer={setActiveLayer} disabled={view !== 'eda'} hasSel={sel.length > 0} rotate={rotateSelection} del={deleteSelection} />
+      <ToolRail tool={tool} setTool={setTool} activeLayer={activeLayer} setActiveLayer={setActiveLayer} disabled={view !== 'eda'} hasSel={sel.length > 0} rotate={rotateSelection} del={deleteSelection} undo={store.undo} redo={store.redo} canUndo={store.canUndo} canRedo={store.canRedo} />
 
       <main className={`sbx-canvas sbx-canvas--${view}`}>
         {view !== '3d' && (
@@ -993,6 +1008,8 @@ export function Editor() {
 
       <StatusBar cursor={cursor} prefs={prefs} setPrefs={setPrefs} activeLayer={activeLayer} toolName={TOOL_NAMES[tool]} route={route} airwires={conn.ratsnest.length} drcState={drcState} doc={doc} savedAt={savedAt} />
 
+      {createPortal(
+        <>
       {helpOpen && <HelpOverlay onClose={() => setHelpOpen(false)} />}
       {showComplete && (
         <CompleteModal
@@ -1006,6 +1023,9 @@ export function Editor() {
         />
       )}
       <Confetti fire={celebrate} />
+        </>,
+        document.body,
+      )}
       <span className="sr-only" aria-live="polite">
         {checklist.coach.title}
       </span>

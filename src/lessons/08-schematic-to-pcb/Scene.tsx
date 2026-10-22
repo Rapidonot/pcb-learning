@@ -18,6 +18,7 @@ const CONVERTED = stages.converted().parts
 const NETS = Object.keys(netInfo)
 const pinsOfNet = (net: string) => Object.keys(fullNetlist).filter((k) => fullNetlist[k] === net)
 const PCB_FIT = { x: -2, y: -3, w: 38, h: 42 }
+const PCB_FIT_NARROW = { x: -2, y: -3, w: 38, h: 50 }
 const OUTLINE_CORNER = 1.5
 
 type Phase = 'idle' | 'flying' | 'ready'
@@ -197,19 +198,25 @@ export function Scene() {
 
   /* ---------------- missions ---------------- */
 
+  const [inspected, setInspected] = useState(false)
+  const [toggled, setToggled] = useState(false)
   useEffect(() => {
-    if (activeNet && phase === 'ready' && conn.pads.some((p) => p.net === activeNet)) mission.complete('inspect')
+    if (activeNet && phase === 'ready' && conn.pads.some((p) => p.net === activeNet)) {
+      mission.complete('inspect')
+      setInspected(true)
+    }
   }, [activeNet, phase, conn, mission])
 
   const toggleRatlines = () => {
     setMenu(null)
-    setRatlines((r) => {
-      const next = !r
-      if (!next) hidOnce.current = true
-      if (next && hidOnce.current && landed.size) mission.complete('ratline')
-      say(next ? 'View › Ratline: ratlines shown' : 'View › Ratline: ratlines hidden')
-      return next
-    })
+    const next = !ratlines
+    setRatlines(next)
+    if (!next) hidOnce.current = true
+    if (next && hidOnce.current && landed.size) {
+      mission.complete('ratline')
+      setToggled(true)
+    }
+    say(next ? 'View › Ratline: ratlines shown' : 'View › Ratline: ratlines hidden')
   }
 
   const startOutline = () => {
@@ -281,8 +288,13 @@ export function Scene() {
           </Button>
         ),
       }
-    if (!activeNet)
+    if (!inspected)
       return { title: 'Inspect the ratsnest', body: 'Hover or tap a pad to light up its net. Each thin line is an airwire: a connection still to be made in copper.' }
+    if (toggled)
+      return {
+        title: 'Ready for placement',
+        body: 'Footprints, netlist and an outline: the PCB has everything it needs. Next, drag the parts onto the board so the airwires get short and tidy.',
+      }
     return {
       title: 'Hide and show the ratlines',
       body: 'Airwires are only a guide, not copper. Toggle them with View › Ratline.',
@@ -330,7 +342,7 @@ export function Scene() {
 
       <div className="l08-panes">
         <div className="l08-left">
-          <section className="l08-pane l08-pane--sch">
+          <section className={`l08-pane l08-pane--sch ${landed.size ? 'is-compact' : ''}`}>
             <div className="l08-tab mono">
               <span className="l08-tab__dot" style={{ background: SCH.wire }} />
               Blinky · Schematic
@@ -381,7 +393,7 @@ export function Scene() {
           <div className="l08-pane__canvas">
             <PcbCanvas
               ref={pcbRef}
-              fit={PCB_FIT}
+              fit={narrow ? PCB_FIT_NARROW : PCB_FIT}
               theme="eda"
               grid={1}
               zoomControls={!narrow}
@@ -392,7 +404,7 @@ export function Scene() {
               ariaLabel="Blinky PCB"
             >
               {outlineMode && <SuggestedOutline />}
-              {outline && <Outline r={outline} slots={slots} bad={verdict ? !verdict.ok : false} />}
+              {outline && <Outline r={outline} slots={slots} bad={verdict ? !verdict.ok : false} dims={!drawing} />}
               <BoardView
                 doc={doc}
                 conn={conn}
@@ -432,7 +444,7 @@ export function Scene() {
                 )}
               </div>
             )}
-            {verdict && !outlineMode && phase === 'ready' && (
+            {verdict && !drawing && phase === 'ready' && (
               <div className={`l08-verdict l08-verdict--${verdict.tone}`} role="status">
                 {verdict.ok ? <IconCheck size={14} /> : <IconX size={14} />} {verdict.text}
               </div>
@@ -600,9 +612,20 @@ function ImportDialog({
   onCancel: () => void
   update: boolean
 }) {
+  const ref = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    ref.current?.querySelector<HTMLButtonElement>('.btn--primary')?.focus({ preventScroll: true })
+  }, [])
   return (
     <div className="l08-modal" onPointerDown={(e) => e.target === e.currentTarget && onCancel()}>
-      <div className="l08-dialog" role="dialog" aria-modal="true" aria-label="Confirm Import Information">
+      <div
+        ref={ref}
+        className="l08-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Confirm Import Information"
+        onKeyDown={(e) => e.key === 'Escape' && onCancel()}
+      >
         <div className="l08-dialog__title">
           <span>Confirm Import Information</span>
           <button onClick={onCancel} aria-label="Close dialog">
@@ -654,7 +677,7 @@ function ImportDialog({
               Cancel
             </Button>
           )}
-          <Button size="sm" variant="primary" autoFocus onClick={changes.length ? onApply : onCancel}>
+          <Button size="sm" variant="primary" onClick={changes.length ? onApply : onCancel}>
             {changes.length ? 'Apply Changes' : 'OK'}
           </Button>
         </div>
@@ -681,7 +704,7 @@ function FlightLayer({ flight, now, landed }: { flight: Flight; now: number; lan
         const cy = Math.min(it.from[1], it.to[1]) - lift
         const x = (1 - t) * (1 - t) * it.from[0] + 2 * (1 - t) * t * cx + t * t * it.to[0]
         const y = (1 - t) * (1 - t) * it.from[1] + 2 * (1 - t) * t * cy + t * t * it.to[1]
-        const k = it.k * (1 + 0.9 * Math.sin(Math.PI * t))
+        const k = it.k * (1 + 0.35 * Math.sin(Math.PI * t))
         const part = CONVERTED.find((p) => p.ref === it.ref)!
         return (
           <g key={it.ref}>
@@ -741,7 +764,7 @@ function SuggestedOutline() {
   )
 }
 
-function Outline({ r, slots, bad }: { r: Rect; slots: Rect[]; bad: boolean }) {
+function Outline({ r, slots, bad, dims }: { r: Rect; slots: Rect[]; bad: boolean; dims: boolean }) {
   return (
     <g style={{ pointerEvents: 'none' }}>
       <rect
@@ -764,7 +787,7 @@ function Outline({ r, slots, bad }: { r: Rect; slots: Rect[]; bad: boolean }) {
           </text>
         </g>
       ))}
-      <Dims r={r} />
+      {dims && <Dims r={r} />}
     </g>
   )
 }

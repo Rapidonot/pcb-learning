@@ -18,49 +18,73 @@ function Flyover() {
   const C = Math.cos(Math.PI / 6)
   const S = Math.sin(Math.PI / 6)
   const k = 9
-  const P = (x: number, y: number, z: number) => [(x - y) * C * k + 250, (x + y) * S * k - z * k + 40] as const
+  const P = (x: number, y: number, z: number) => [(x - y) * C * k + 260, (x + y) * S * k - z * k + 80] as const
   const pts = (arr: [number, number, number][]) => arr.map((p) => P(...p).join(',')).join(' ')
   const plane = (z: number) => pts([[0, 0, z], [26, 0, z], [26, 18, z], [0, 18, z]])
   const TOP = 7
   const BOT = 0
-  const via = (x: number, y: number) => {
-    const [ax, ay] = P(x, y, TOP)
-    const [bx, by] = P(x, y, BOT)
+  const track = (a: [number, number, number][], color: string, key: string) => (
+    <g key={key}>
+      <polyline points={pts(a)} fill="none" stroke="#000" strokeOpacity={0.25} strokeWidth={8} strokeLinecap="round" transform="translate(1.5 2.5)" />
+      <polyline points={pts(a)} fill="none" stroke={color} strokeWidth={6.5} strokeLinecap="round" />
+      <polyline points={pts(a)} fill="none" stroke="#fff" strokeOpacity={0.35} strokeWidth={1.6} strokeLinecap="round" transform="translate(-0.8 -1.2)" />
+    </g>
+  )
+  const pad = (x: number, y: number, z: number, key: string) => {
+    const [cx, cy] = P(x, y, z)
     return (
-      <g key={`${x}-${y}`}>
-        <line x1={ax} y1={ay} x2={bx} y2={by} stroke={COLORS.copperDark} strokeWidth={7} strokeLinecap="round" />
-        <line x1={ax - 1.5} y1={ay} x2={bx - 1.5} y2={by} stroke={COLORS.copperHi} strokeWidth={2} strokeLinecap="round" opacity={0.7} />
-        <ellipse cx={ax} cy={ay} rx={7} ry={4} fill="#c9c9c9" stroke="#888" strokeWidth={0.8} />
-        <ellipse cx={ax} cy={ay} rx={3} ry={1.8} fill="#222" />
-        <ellipse cx={bx} cy={by} rx={7} ry={4} fill="#c9c9c9" stroke="#888" strokeWidth={0.8} />
+      <g key={key}>
+        <ellipse cx={cx} cy={cy} rx={8} ry={4.6} fill="url(#fly-ring)" stroke="#8b8b8b" strokeWidth={0.6} />
+        <ellipse cx={cx} cy={cy} rx={3.2} ry={1.9} fill="#161616" />
       </g>
     )
   }
+  const barrel = (x: number, y: number) => {
+    const [ax, ay] = P(x, y, TOP)
+    const [, by] = P(x, y, BOT)
+    return <rect key={`b${x}${y}`} x={ax - 3.4} y={ay} width={6.8} height={by - ay} fill="url(#fly-barrel)" />
+  }
+  const vias: [number, number][] = [
+    [13, 5],
+    [13, 13],
+  ]
   return (
-    <svg viewBox="0 0 500 300" role="img" aria-label="A red top-layer track jumps under a blue bottom-layer track using two vias">
+    <svg viewBox="0 0 520 330" role="img" aria-label="A red top-layer track jumps under a blue bottom-layer track using two vias">
+      <defs>
+        <linearGradient id="fly-bot" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#6c8fdc" stopOpacity={0.18} />
+          <stop offset="1" stopColor="#24356a" stopOpacity={0.3} />
+        </linearGradient>
+        <linearGradient id="fly-top" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#fffdf7" stopOpacity={0.75} />
+          <stop offset="1" stopColor="#e8dfcc" stopOpacity={0.55} />
+        </linearGradient>
+        <radialGradient id="fly-ring" cx="0.35" cy="0.3" r="0.8">
+          <stop offset="0" stopColor="#ffffff" />
+          <stop offset="0.5" stopColor="#cfcfcf" />
+          <stop offset="1" stopColor="#8a8a8a" />
+        </radialGradient>
+        <linearGradient id="fly-barrel" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="#6b3a14" />
+          <stop offset="0.35" stopColor="#f2bd85" />
+          <stop offset="0.6" stopColor="#c47a3a" />
+          <stop offset="1" stopColor="#5b3013" />
+        </linearGradient>
+        <filter id="fly-shadow" x="-10%" y="-10%" width="120%" height="130%">
+          <feDropShadow dx="0" dy="6" stdDeviation="6" floodColor="#3b2a10" floodOpacity="0.18" />
+        </filter>
+      </defs>
       {/* bottom plane */}
-      <polygon points={plane(BOT)} fill="#1b2a4a" opacity={0.18} stroke="var(--ink-3)" strokeWidth={0.8} strokeDasharray="4 3" />
-      <polyline points={pts([[13, 5, BOT], [13, 13, BOT]])} fill="none" stroke={EDA.bottom} strokeWidth={6} strokeLinecap="round" />
-      {/* vias */}
-      {via(13, 5)}
-      {via(13, 13)}
+      <polygon points={plane(BOT)} fill="url(#fly-bot)" stroke="var(--ink-3)" strokeWidth={0.8} strokeDasharray="4 3" />
+      {track([[13, 5, BOT], [13, 13, BOT]], EDA.bottom, 'bt')}
+      {vias.map(([x, y]) => pad(x, y, BOT, `pb${x}${y}`))}
+      {vias.map(([x, y]) => barrel(x, y))}
       {/* top plane */}
-      <polygon points={plane(TOP)} fill="var(--card)" opacity={0.5} stroke="var(--ink-3)" strokeWidth={0.8} />
-      <polyline points={pts([[1, 9, TOP], [25, 9, TOP]])} fill="none" stroke={EDA.top} strokeWidth={6} strokeLinecap="round" opacity={0.95} />
-      <polyline points={pts([[13, 1, TOP], [13, 5, TOP]])} fill="none" stroke={EDA.top} strokeWidth={6} strokeLinecap="round" />
-      <polyline points={pts([[13, 13, TOP], [13, 17, TOP]])} fill="none" stroke={EDA.top} strokeWidth={6} strokeLinecap="round" />
-      {(() => {
-        const [ax, ay] = P(13, 5, TOP)
-        const [bx, by] = P(13, 13, TOP)
-        return (
-          <>
-            <ellipse cx={ax} cy={ay} rx={7} ry={4} fill="#d0d0d0" stroke="#777" strokeWidth={0.8} />
-            <ellipse cx={ax} cy={ay} rx={3} ry={1.8} fill="#222" />
-            <ellipse cx={bx} cy={by} rx={7} ry={4} fill="#d0d0d0" stroke="#777" strokeWidth={0.8} />
-            <ellipse cx={bx} cy={by} rx={3} ry={1.8} fill="#222" />
-          </>
-        )
-      })()}
+      <polygon points={plane(TOP)} fill="url(#fly-top)" stroke="var(--ink-3)" strokeWidth={0.8} filter="url(#fly-shadow)" />
+      {track([[1, 9, TOP], [25, 9, TOP]], EDA.top, 't1')}
+      {track([[13, 1, TOP], [13, 5, TOP]], EDA.top, 't2')}
+      {track([[13, 13, TOP], [13, 17, TOP]], EDA.top, 't3')}
+      {vias.map(([x, y]) => pad(x, y, TOP, `pt${x}${y}`))}
       <g fontFamily="var(--font-mono)" fontSize={10.5} fontWeight={600} letterSpacing={1.2} fill="var(--ink-2)">
         <text x={P(25, 9, TOP)[0] + 10} y={P(25, 9, TOP)[1] + 4}>
           TRACK B (TOP)
@@ -71,11 +95,14 @@ function Flyover() {
         <text x={P(13, 9, BOT)[0] + 18} y={P(13, 9, BOT)[1] + 22} fill={EDA.bottom}>
           …DIVES UNDER ON THE BOTTOM
         </text>
-        <text x={P(0, 18, TOP)[0] - 4} y={P(0, 18, TOP)[1] + 16} fill="var(--ink-3)">
-          TOP LAYER
+        <text x={P(13, 13, TOP)[0] + 14} y={P(13, 13, TOP)[1] + 18}>
+          VIA
         </text>
-        <text x={P(0, 18, BOT)[0] - 4} y={P(0, 18, BOT)[1] + 16} fill="var(--ink-3)">
-          BOTTOM LAYER
+        <text x={P(0, 18, TOP)[0] - 10} y={P(0, 18, TOP)[1] + 4} fill="var(--ink-3)" textAnchor="end">
+          TOP
+        </text>
+        <text x={P(0, 18, BOT)[0] - 10} y={P(0, 18, BOT)[1] + 4} fill="var(--ink-3)" textAnchor="end">
+          BOTTOM
         </text>
       </g>
     </svg>

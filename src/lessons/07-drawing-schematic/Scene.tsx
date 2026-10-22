@@ -145,8 +145,8 @@ export function Scene() {
   const handlePress = (world: Vec) => {
     if (auto) return
     setNote(null)
-    const t = pick(doc, world, hitR, targets)
     if (!draft) {
+      const t = pick(doc, world, hitR, targets)
       if (t && t.kind !== 'wire') {
         setDraft({ pts: [t.p], axis: t.axis, startId: `${t.kind}:${t.id}` })
         setFlip(false)
@@ -158,11 +158,14 @@ export function Scene() {
       return
     }
     const last = draft.pts[draft.pts.length - 1]
-    if (t && draft.pts.length === 1 && same(t.p, draft.pts[0])) {
+    // while drawing, the wire's own start is not a valid end
+    const tt = pick(doc, world, hitR, targets.filter((x) => !same(x.p, draft.pts[0])))
+    if (!tt && draft.pts.length === 1 && Math.hypot(world[0] - last[0], world[1] - last[1]) < hitR * 0.5) {
       // tapped the start again: cancel
       setDraft(null)
       return
     }
+    const t = tt
     if (t) {
       commit([...draft.pts, ...lRoute(last, t.p, axisFor(draft))])
       setDraft(null)
@@ -188,7 +191,7 @@ export function Scene() {
     if (world) handlePress(world)
   }
   const onMove = (_e: React.PointerEvent, world: Vec) => {
-    const t = pick(doc, world, hitR, targets)
+    const t = pick(doc, world, hitR, draft ? targets.filter((x) => !same(x.p, draft.pts[0])) : targets)
     setHoverT(t)
     setCursor(t ? t.p : snapV(world))
   }
@@ -337,7 +340,7 @@ export function Scene() {
         : selected
           ? 'Wire selected. Delete removes it.'
           : coarse
-            ? 'Tap a pin to start a wire, then tap where it should end.'
+            ? 'Tap a pin, then tap where the wire should end. Pinch to zoom for tiny gaps.'
             : 'Click a pin to start a wire. Click another pin, flag or wire to finish it.'
 
   const canvas = (

@@ -326,8 +326,7 @@ function Article() {
         </tbody>
       </table>
       <p>
-        A good habit is to keep a resistor below about half its rating. You'll learn what those package names mean in Lesson
-        4.
+        A good habit is to keep a resistor below about half its rating. You'll learn what those package names mean in “Packages & footprints”.
       </p>
 
       <h2>Why Blinky's R3 is 330 Ω</h2>
@@ -382,7 +381,7 @@ const lesson: LessonContent = {
   ],
   Article,
   build: {
-    intro: <>Place Blinky's current-limiting resistor, R3, and check its value. Use the schematic of the Blinky project you created in Lesson 1.</>,
+    intro: <>Place Blinky's current-limiting resistor, R3, and check its value. Use the schematic of the Blinky project you created in “What is a PCB?”.</>,
     steps: [
       {
         title: 'Open the device dialog',

@@ -64,6 +64,15 @@ export function Calculator({
           <div className="l10-calc__alt mono">
             {r.widthMil.toFixed(1)} mil · area {r.areaMil2.toFixed(1)} mil²
           </div>
+          <div style={{ marginTop: 10 }}>
+            {pick ? (
+              <Button size="sm" variant="accent" onClick={() => onUse(pick)} style={{ width: '100%' }}>
+                Route with {pick} mm
+              </Button>
+            ) : (
+              <div className="l10-calc__note">Wider than this playground’s 1.0 mm tracks. Use a wider track or a copper pour (see Copper pours & ground).</div>
+            )}
+          </div>
         </div>
 
         <CrossSection widthMm={r.widthMm} thickMm={r.thickMm} oz={value.oz} />
@@ -74,13 +83,6 @@ export function Calculator({
           {heat > value.rise + 1e-6 ? ', more than you allowed.' : '. Fine.'}
         </div>
 
-        {pick ? (
-          <Button size="sm" variant="accent" onClick={() => onUse(pick)} style={{ width: '100%' }}>
-            Route with {pick} mm
-          </Button>
-        ) : (
-          <div className="l10-calc__note">Wider than this playground’s 1.0 mm tracks. Use a wider track or a copper pour (see Copper pours & ground).</div>
-        )}
       </div>
     </div>
   )
@@ -107,15 +109,26 @@ function CrossSection({ widthMm, thickMm, oz }: { widthMm: number; thickMm: numb
             <stop offset="0.75" stopColor={REAL.fr4Dark} />
             <stop offset="1" stopColor={REAL.fr4Dark} stopOpacity={0} />
           </linearGradient>
+          <linearGradient id={`cu-${uid}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stopColor="#f6b37a" />
+            <stop offset="0.5" stopColor={REAL.copper} />
+            <stop offset="1" stopColor="#a65a1f" />
+          </linearGradient>
+          <linearGradient id={`sheen-${uid}`} x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stopColor="#fff" stopOpacity={0.18} />
+            <stop offset="0.4" stopColor="#fff" stopOpacity={0} />
+          </linearGradient>
         </defs>
         {/* FR-4 core (the bottom is cut away; the full core is 1.6 mm thick) */}
         <rect x={0} y={top} width={V} height={core * 0.62} fill={`url(#fr-${uid})`} />
+        <rect x={0} y={top} width={V} height={core * 0.62} fill={`url(#sheen-${uid})`} />
+        <rect x={0} y={top} width={V} height={fs * 0.12} fill="#fff" opacity={0.25} />
         {/* glass-fibre bundles, faintly */}
         {[0.25, 0.5, 0.75].map((f) => (
           <line key={f} x1={0} x2={V} y1={top + core * 0.62 * f * 0.8} y2={top + core * 0.62 * f * 0.8} stroke="rgba(90,70,30,0.18)" strokeWidth={fs * 0.05} strokeDasharray={`${fs * 0.6} ${fs * 0.3}`} />
         ))}
         {/* the trace */}
-        <rect x={x0} y={top - thickMm} width={widthMm} height={thickMm} fill={REAL.copper} className="l10-xs__cu" />
+        <rect x={x0} y={top - thickMm} width={widthMm} height={thickMm} fill={`url(#cu-${uid})`} className="l10-xs__cu" />
         <rect x={x0} y={top - thickMm} width={widthMm} height={thickMm} fill="none" stroke="#a35a1c" strokeWidth={Math.min(thickMm * 0.25, fs * 0.05)} />
         {/* width dimension */}
         <g stroke="var(--ink-2)" strokeWidth={fs * 0.08}>

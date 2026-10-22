@@ -1,4 +1,4 @@
-/* Lesson 15: turn the finished Blinky BoardDoc into Gerber (RS-274X) + Excellon files.
+/* Gerber lesson: turn the finished Blinky BoardDoc into Gerber (RS-274X) + Excellon files.
  *
  * Everything is built as a list of primitives first (board coordinates, mm, y down). The SVG viewer
  * draws those primitives and the text generator serialises the very same list, so what you see in
