@@ -250,8 +250,7 @@
 .chapter__lessons {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 1px;
-  background: var(--line);
+  overflow: hidden;
 }
 .lcard {
   display: flex;
@@ -259,6 +258,7 @@
   padding: 16px 18px;
   background: var(--card);
   transition: background 0.15s;
+  box-shadow: 1px 0 0 var(--line), 0 1px 0 var(--line);
 }
 .lcard:hover {
   background: var(--card-2);

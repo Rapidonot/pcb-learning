@@ -1,0 +1,111 @@
+.gl-wrap {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 20px 32px 80px;
+}
+.gl-head h1 {
+  font-size: clamp(36px, 4.6vw, 60px);
+  line-height: 1;
+  margin: 10px 0 12px;
+}
+.gl-head p {
+  font-size: 16.5px;
+  color: var(--ink-2);
+}
+.gl-search {
+  width: 100%;
+  max-width: 420px;
+  height: 40px;
+  margin-top: 18px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line-2);
+  background: var(--card);
+  font-size: 14px;
+  outline: none;
+}
+.gl-search:focus {
+  border-color: var(--accent);
+  box-shadow: var(--ring);
+}
+.gl-letters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 14px;
+}
+.gl-letters a {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  font-size: 12px;
+  font-weight: 600;
+}
+.gl-letters a:hover {
+  border-color: var(--accent);
+  color: var(--accent-ink);
+}
+.gl-section {
+  display: grid;
+  grid-template-columns: 70px minmax(0, 1fr);
+  gap: 10px;
+  padding: 26px 0;
+  border-bottom: 1px dashed var(--line-2);
+  scroll-margin-top: 20px;
+}
+.gl-letter {
+  font-size: 54px;
+  line-height: 0.9;
+  color: var(--accent);
+}
+.gl-list {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.gl-item {
+  padding: 13px 15px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  background: var(--card);
+}
+.gl-item dt {
+  font-weight: 650;
+  font-size: 15px;
+}
+.gl-item dd {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--ink-2);
+  line-height: 1.5;
+}
+.gl-link {
+  display: block;
+  margin-top: 8px;
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+.gl-link:hover {
+  color: var(--accent-ink);
+}
+@media (max-width: 760px) {
+  .gl-wrap {
+    padding: 14px 16px 60px;
+  }
+  .gl-section {
+    grid-template-columns: 1fr;
+  }
+  .gl-list {
+    grid-template-columns: 1fr;
+  }
+  .gl-letter {
+    font-size: 40px;
+  }
+}

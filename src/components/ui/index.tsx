@@ -82,7 +82,9 @@ export function FloatingCard({
   defaultCollapsed?: boolean
   style?: CSSProperties
 }) {
-  const [collapsed, setCollapsed] = useState(defaultCollapsed)
+  const [collapsed, setCollapsed] = useState(
+    () => defaultCollapsed || (collapsible && typeof window !== 'undefined' && window.matchMedia('(max-width: 640px)').matches),
+  )
   return (
     <div
       className={`float-card float-card--${corner} ${collapsed ? 'is-collapsed' : ''}`}
