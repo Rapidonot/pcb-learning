@@ -11,3 +11,4 @@ scripts/dev/sandbox-*
 
 # raw captures from scripts/render-thumbs.mjs (optimised copies live in public/thumbs)
 .thumbs-raw/
+.thumbs-raw/
