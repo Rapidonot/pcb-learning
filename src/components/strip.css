@@ -1,0 +1,115 @@
+.strip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--line);
+  background: var(--card);
+  box-shadow: var(--shadow-1);
+  min-width: 0;
+}
+.strip__label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  padding: 0 2px;
+}
+.strip__arrow {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: var(--ink-3);
+  border: 1px solid var(--line);
+  background: var(--card-2);
+}
+.strip__arrow:hover {
+  color: var(--ink);
+  border-color: var(--line-3);
+}
+.strip__track {
+  flex: 1 1 auto;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+  padding: 2px;
+}
+.strip__track::-webkit-scrollbar {
+  display: none;
+}
+.strip__item {
+  flex: none;
+  width: 116px;
+  scroll-snap-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 6px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  transition: background 0.15s, border-color 0.15s, transform 0.2s var(--ease);
+}
+.strip__item:hover {
+  background: var(--paper-2);
+  transform: translateY(-2px);
+}
+.strip__item.is-current {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent-soft) 45%, var(--card));
+}
+.strip__thumb {
+  position: relative;
+  height: 52px;
+  border-radius: 8px;
+  background: var(--paper-2);
+  border: 1px solid var(--line);
+  padding: 3px 10px;
+}
+.strip__check {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--good);
+  color: #fff;
+  border: 2px solid var(--card);
+}
+.strip__name {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.strip__item.is-current .strip__name {
+  color: var(--accent-ink);
+}
+.strip__item--cap .strip__thumb {
+  background: color-mix(in srgb, var(--gold) 18%, var(--paper-2));
+}
+
+@media (max-width: 640px) {
+  .strip__label,
+  .strip__arrow {
+    display: none;
+  }
+  .strip__item {
+    width: 96px;
+  }
+}

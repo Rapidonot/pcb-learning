@@ -1,0 +1,135 @@
+/* Long-form lesson text ("Understand" section) */
+.prose {
+  max-width: 720px;
+  font-size: 16.5px;
+  line-height: 1.7;
+  color: var(--ink-2);
+}
+.prose > * + * {
+  margin-top: 1.05em;
+}
+.prose h2 {
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 34px;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin-top: 1.8em;
+}
+.prose h2:first-child {
+  margin-top: 0;
+}
+.prose h3 {
+  font-size: 18px;
+  font-weight: 650;
+  color: var(--ink);
+  margin-top: 1.6em;
+}
+.prose strong {
+  color: var(--ink);
+  font-weight: 650;
+}
+.prose em {
+  font-style: italic;
+}
+.prose a {
+  color: var(--accent-ink);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.prose ul,
+.prose ol {
+  padding-left: 1.3em;
+}
+.prose li + li {
+  margin-top: 0.4em;
+}
+.prose li::marker {
+  color: var(--accent);
+}
+.prose code {
+  font-size: 0.86em;
+  padding: 0.12em 0.4em;
+  border-radius: 5px;
+  background: var(--paper-2);
+  border: 1px solid var(--line);
+  color: var(--ink);
+}
+.prose .callout {
+  font-size: 15px;
+  margin-top: 1.4em;
+  margin-bottom: 0.4em;
+}
+.prose .figure {
+  margin: 1.6em 0;
+}
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14.5px;
+}
+.prose th {
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  border-bottom: 1px solid var(--line-2);
+  padding: 8px 10px;
+}
+.prose td {
+  border-bottom: 1px dashed var(--line);
+  padding: 9px 10px;
+  vertical-align: top;
+  color: var(--ink-2);
+}
+.prose td:first-child {
+  color: var(--ink);
+  font-weight: 550;
+}
+.prose .lead {
+  font-size: 19px;
+  line-height: 1.6;
+  color: var(--ink);
+}
+.prose .formula {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  text-align: center;
+  padding: 14px 16px;
+  border-radius: var(--r-md);
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: var(--ink);
+}
+
+/* figure frame used inside articles */
+.figure {
+  border-radius: var(--r-lg);
+  border: 1px solid var(--line);
+  background: var(--card);
+  overflow: hidden;
+  box-shadow: var(--shadow-1);
+}
+.figure__body {
+  position: relative;
+}
+.figure__cap {
+  padding: 10px 14px;
+  border-top: 1px dashed var(--line);
+  font-size: 13px;
+  color: var(--ink-3);
+  line-height: 1.5;
+}
+.figure__cap b {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  margin-right: 6px;
+}

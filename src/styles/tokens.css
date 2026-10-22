@@ -1,0 +1,156 @@
+/* ------------------------------------------------------------------
+   Learn PCB — design tokens
+   "Engineering notebook" palette: warm paper, graphite ink, copper accents.
+   ------------------------------------------------------------------ */
+
+:root {
+  color-scheme: light;
+
+  /* paper & ink */
+  --paper: #f2ede2;
+  --paper-2: #ebe4d5;
+  --paper-3: #e2d9c6;
+  --card: #f8f5ee;
+  --card-2: #fbf9f4;
+  --ink: #26241f;
+  --ink-2: #514d44;
+  --ink-3: #8a8476;
+  --ink-4: #b1aa9a;
+  --line: #dcd3c1;
+  --line-2: #c9bea8;
+  --line-3: #b5a98f;
+
+  /* accents */
+  --accent: #e0542c;
+  --accent-ink: #b8401d;
+  --accent-soft: #f6d9cc;
+  --copper: #c7782f;
+  --copper-light: #e3a361;
+  --gold: #d6a63f;
+  --good: #2f8a5b;
+  --good-soft: #d5ead9;
+  --warn: #cf8f12;
+  --warn-soft: #f5e6c2;
+  --bad: #cf3f2b;
+  --bad-soft: #f5d3cb;
+  --info: #3767c9;
+  --info-soft: #d7e1f5;
+
+  /* real-world board materials */
+  --mask: #1f6b47;
+  --mask-2: #185a3b;
+  --mask-3: #124a30;
+  --mask-hi: #2b8a5d;
+  --silk: #f6f3ea;
+  --fr4: #cbb781;
+  --fr4-2: #b49f66;
+  --hasl: #c9ccd0;
+  --enig: #dcb252;
+  --solder: #b9bdc2;
+  --plastic: #2a2a2c;
+  --plastic-2: #3b3b3e;
+
+  /* EDA canvas (mimics EasyEDA's PCB editor colours) */
+  --eda-bg: #101210;
+  --eda-bg-2: #171a17;
+  --eda-grid: rgba(255, 255, 255, 0.07);
+  --eda-grid-major: rgba(255, 255, 255, 0.13);
+  --eda-top: #e8453c;
+  --eda-bottom: #3f6fe0;
+  --eda-silk-top: #f0d84a;
+  --eda-silk-bottom: #6fb8ff;
+  --eda-pad: #c9a227;
+  --eda-via: #d0d0d0;
+  --eda-outline: #e7a43a;
+  --eda-ratsnest: #e9e9e9;
+  --eda-select: #ffffff;
+  --eda-drc: #ff2bd1;
+
+  /* schematic canvas (mimics EasyEDA's schematic editor) */
+  --sch-bg: #fbfaf6;
+  --sch-grid: #e3ddcf;
+  --sch-symbol: #8a1c1c;
+  --sch-pin: #6a6a6a;
+  --sch-wire: #1f7a3f;
+  --sch-label: #1b4fbf;
+  --sch-text: #333;
+
+  /* typography */
+  --font-sans: 'Inter Tight Variable', 'Inter Tight', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  --font-display: 'Instrument Serif', 'Iowan Old Style', Georgia, serif;
+
+  /* shape & depth */
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 20px;
+  --shadow-1: 0 1px 0 rgba(60, 45, 20, 0.06), 0 1px 3px rgba(60, 45, 20, 0.08);
+  --shadow-2: 0 1px 0 rgba(60, 45, 20, 0.05), 0 6px 18px -6px rgba(60, 45, 20, 0.22);
+  --shadow-3: 0 2px 0 rgba(60, 45, 20, 0.04), 0 18px 40px -14px rgba(60, 45, 20, 0.35);
+  --ring: 0 0 0 3px color-mix(in srgb, var(--accent) 30%, transparent);
+
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-spring: cubic-bezier(0.3, 1.4, 0.5, 1);
+
+  --rail-w: 60px;
+  --topbar-h: 64px;
+}
+
+/* ---------- Dark mode: "night lab" ---------- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --paper: #171815;
+    --paper-2: #1d1f1b;
+    --paper-3: #262823;
+    --card: #20221e;
+    --card-2: #252722;
+    --ink: #ece6d8;
+    --ink-2: #c3bcad;
+    --ink-3: #8e897d;
+    --ink-4: #615d54;
+    --line: #34362f;
+    --line-2: #44463d;
+    --line-3: #57594e;
+    --accent: #f06a40;
+    --accent-ink: #ff8a62;
+    --accent-soft: #4a2619;
+    --good-soft: #1d3a2a;
+    --warn-soft: #3d3016;
+    --bad-soft: #452019;
+    --info-soft: #1c2a47;
+    --sch-bg: #f4f1e8;
+    --shadow-1: 0 1px 0 rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.4);
+    --shadow-2: 0 1px 0 rgba(0, 0, 0, 0.3), 0 8px 20px -6px rgba(0, 0, 0, 0.6);
+    --shadow-3: 0 2px 0 rgba(0, 0, 0, 0.3), 0 22px 44px -14px rgba(0, 0, 0, 0.8);
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --paper: #171815;
+  --paper-2: #1d1f1b;
+  --paper-3: #262823;
+  --card: #20221e;
+  --card-2: #252722;
+  --ink: #ece6d8;
+  --ink-2: #c3bcad;
+  --ink-3: #8e897d;
+  --ink-4: #615d54;
+  --line: #34362f;
+  --line-2: #44463d;
+  --line-3: #57594e;
+  --accent: #f06a40;
+  --accent-ink: #ff8a62;
+  --accent-soft: #4a2619;
+  --good-soft: #1d3a2a;
+  --warn-soft: #3d3016;
+  --bad-soft: #452019;
+  --info-soft: #1c2a47;
+  --sch-bg: #f4f1e8;
+  --shadow-1: 0 1px 0 rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-2: 0 1px 0 rgba(0, 0, 0, 0.3), 0 8px 20px -6px rgba(0, 0, 0, 0.6);
+  --shadow-3: 0 2px 0 rgba(0, 0, 0, 0.3), 0 22px 44px -14px rgba(0, 0, 0, 0.8);
+}
