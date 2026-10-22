@@ -79,7 +79,7 @@ export function Calculator({
             Route with {pick} mm
           </Button>
         ) : (
-          <div className="l10-calc__note">Wider than this playground’s 1.0 mm tracks. Use a wider track or a copper pour (Lesson 12).</div>
+          <div className="l10-calc__note">Wider than this playground’s 1.0 mm tracks. Use a wider track or a copper pour (see Copper pours & ground).</div>
         )}
       </div>
     </div>

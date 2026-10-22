@@ -174,7 +174,7 @@ function Article() {
       <h2>What the conversion actually moves</h2>
       <p>
         Every symbol in your schematic is linked to a <strong>footprint</strong>, the pattern of copper pads the real part
-        gets soldered to (Lesson 4). Conversion places one footprint for each symbol. With them comes the{' '}
+        gets soldered to (you met them in Packages & footprints). Conversion places one footprint for each symbol. With them comes the{' '}
         <strong>netlist</strong>: a list that says which pin belongs to which net. U1 pin 8 is on VCC, pin 1 is on GND,
         and so on for all 24 pins.
       </p>
@@ -272,7 +272,7 @@ const lesson: LessonContent = {
   ],
   Article,
   build: {
-    intro: <>Open your Blinky schematic from Lesson 7. The project already contains an empty PCB on the same board.</>,
+    intro: <>Open the Blinky schematic you drew in Drawing your first schematic. The project already contains an empty PCB on the same board.</>,
     steps: [
       {
         title: 'Check the schematic first',

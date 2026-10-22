@@ -423,7 +423,7 @@ export function Scene() {
                 </button>
               </div>
             )}
-            {narrow && (
+            {narrow && !(phase === 'idle' && !landed.size) && (
               <div className="l08-mhint">
                 {netPanel ?? (
                   <>

@@ -761,3 +761,10 @@
     margin: 0 auto;
   }
 }
+.l08-scene.is-narrow .l08-empty__icon {
+  display: none;
+}
+.l08-scene.is-narrow .l08-empty__b {
+  font-size: 12px;
+  margin-bottom: 8px;
+}

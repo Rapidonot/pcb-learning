@@ -210,7 +210,7 @@ function Article() {
       <h2>The EasyEDA schematic workflow</h2>
       <Steps
         items={[
-          { title: 'Place the devices', body: <>Open <Menu path={['Place', 'Device']} />, search for a part and click it onto the sheet. Each one brings its symbol, its footprint and, from the LCSC search engine, a real orderable part.</> },
+          { title: 'Place the devices', body: <>Open <Menu path={['Place', 'Device']} /> and click each part onto the sheet. You picked Blinky's parts in <em>Choosing parts &amp; reading datasheets</em>, so this is mostly search, click, rotate.</> },
           { title: 'Wire the pins', body: 'Start the wire tool, click a pin end, click to add corners, and click another pin to finish.' },
           { title: 'Add labels and flags', body: 'Name nets with net labels and add VCC and GND flags, so you are not running long wires all over the page.' },
           { title: 'Annotate', body: <>Give every part a unique designator (R1, R2…) with <Menu path={['Design', 'Annotate Designator']} />.</> },
@@ -308,8 +308,8 @@ const lesson: LessonContent = {
         keys: ['Shift+F'],
         body: (
           <>
-            Search the LCSC engine for <b>NE555</b> (SOIC-8), then 0805 resistors (1k, 47k, 330Ω), 0805 capacitors (10µF, 100nF,
-            10nF), a red 0805 LED and a 2-pin header. Press <b>Space</b> to rotate a part.
+            Place the parts you chose in <em>Choosing parts &amp; reading datasheets</em>: the NE555, three 0805 resistors, three
+            0805 capacitors, a red 0805 LED and a 2-pin header. Press <b>Space</b> to rotate a part.
           </>
         ),
       },

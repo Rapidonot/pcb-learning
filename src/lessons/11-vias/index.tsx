@@ -6,7 +6,7 @@ import { BoardView } from '@/pcb/render'
 import { stages } from '@/pcb/project'
 import { EDA } from '@/pcb/palette'
 import { Scene } from './Scene'
-import { ViaSection, ViaPlan, COLORS } from './ViaSection'
+import { ViaSection, ViaPlan, SectionDefs } from './ViaSection'
 import './lesson11.css'
 
 /* ------------------------------------------------------------------ */
@@ -83,42 +83,66 @@ function Flyover() {
 }
 
 function ViaTypes() {
-  // 4-layer stack, side view
-  const layers = [20, 70, 120, 170]
-  const x0 = 30
-  const x1 = 470
-  const cu = (y: number, from: number, to: number, key: string) => <rect key={key} x={from} y={y - 3} width={to - from} height={6} fill={COLORS.copper} />
+  // 4-layer stack in mm, side view
+  const p = 'vtypes'
+  const L = [0.25, 0.75, 1.25, 1.75] // copper layer y positions
+  const x0 = 0.25
+  const x1 = 4.75
+  const cu = 0.07
+  const hole = 0.2
+  const plate = 0.035
   const barrel = (x: number, yA: number, yB: number, key: string) => (
     <g key={key}>
-      <rect x={x - 9} y={yA} width={18} height={yB - yA} fill="var(--paper-2)" />
-      <rect x={x - 9} y={yA} width={3.5} height={yB - yA} fill={COLORS.copperDark} />
-      <rect x={x + 5.5} y={yA} width={3.5} height={yB - yA} fill={COLORS.copperDark} />
+      <rect x={x - hole / 2 - plate} y={yA} width={hole + plate * 2} height={yB - yA} fill="var(--paper-2)" />
+      <rect x={x - hole / 2} y={yA} width={hole} height={yB - yA} fill={`url(#${p}-tube)`} />
+      <rect x={x - hole / 2 - plate} y={yA} width={plate} height={yB - yA} fill={`url(#${p}-plateL)`} />
+      <rect x={x + hole / 2} y={yA} width={plate} height={yB - yA} fill={`url(#${p}-plateR)`} />
+      {[yA, yB - cu].map((y, i) => (
+        <g key={i}>
+          <rect x={x - 0.25} y={y} width={0.25 - hole / 2 - plate} height={cu} fill={`url(#${p}-cu)`} />
+          <rect x={x + hole / 2 + plate} y={y} width={0.25 - hole / 2 - plate} height={cu} fill={`url(#${p}-cu)`} />
+        </g>
+      ))}
     </g>
   )
+  const holes = [
+    { x: 1.1, a: L[0] - cu, b: L[3] + cu },
+    { x: 2.5, a: L[0] - cu, b: L[1] + cu },
+    { x: 3.9, a: L[1] - cu, b: L[2] + cu },
+  ]
+  const lab = { fontFamily: 'var(--font-mono)', fontSize: 0.115, fontWeight: 600, letterSpacing: 0.012 } as const
   return (
-    <svg viewBox="0 0 500 250" role="img" aria-label="Through, blind and buried vias in a four-layer board">
-      {[0, 1, 2].map((i) => (
-        <rect key={i} x={x0} y={layers[i]} width={x1 - x0} height={layers[i + 1] - layers[i]} fill={COLORS.fr4} opacity={i === 1 ? 0.75 : 1} />
+    <svg viewBox="0 0 5.1 2.45" role="img" aria-label="Through, blind and buried vias in a four-layer board">
+      <SectionDefs p={p} />
+      <g filter={`url(#${p}-shadow)`}>
+        <rect x={x0} y={L[0]} width={x1 - x0} height={L[3] - L[0]} fill={`url(#${p}-weave)`} />
+      </g>
+      <rect x={x0} y={L[0]} width={x1 - x0} height={L[3] - L[0]} fill={`url(#${p}-resin)`} />
+      {/* prepreg between inner layers is a slightly darker band */}
+      <rect x={x0} y={L[1]} width={x1 - x0} height={L[2] - L[1]} fill="#000" opacity={0.07} />
+      {L.map((y, i) => (
+        <g key={i}>
+          <rect x={x0} y={y - cu / 2} width={x1 - x0} height={cu} fill={`url(#${p}-cu)`} />
+          <rect x={x0} y={y - cu / 2} width={x1 - x0} height={cu * 0.18} fill="#fff" opacity={0.3} />
+        </g>
       ))}
-      {layers.map((y, i) => cu(y, x0, x1, `l${i}`))}
-      {barrel(110, layers[0] - 3, layers[3] + 3, 'b1')}
-      {barrel(250, layers[0] - 3, layers[1] + 3, 'b2')}
-      {barrel(390, layers[1] - 3, layers[2] + 3, 'b3')}
-      <g fontFamily="var(--font-mono)" fontSize={11} fontWeight={600} letterSpacing={1.2} textAnchor="middle" fill="var(--ink)">
-        <text x={110} y={208}>THROUGH</text>
-        <text x={250} y={208}>BLIND</text>
-        <text x={390} y={208}>BURIED</text>
+      {holes.map((h, i) => barrel(h.x, h.a, h.b, `h${i}`))}
+      <g {...lab} textAnchor="middle" fill="var(--ink)">
+        <text x={1.1} y={2.08}>THROUGH</text>
+        <text x={2.5} y={2.08}>BLIND</text>
+        <text x={3.9} y={2.08}>BURIED</text>
       </g>
-      <g fontFamily="var(--font-sans)" fontSize={11.5} textAnchor="middle" fill="var(--ink-3)">
-        <text x={110} y={226}>top to bottom: every layer</text>
-        <text x={250} y={226}>outer layer to an inner one</text>
-        <text x={390} y={226}>inner layers only, hidden</text>
+      <g fontFamily="var(--font-sans)" fontSize={0.1} textAnchor="middle" fill="var(--ink-3)">
+        <text x={1.1} y={2.26}>top to bottom: every layer</text>
+        <text x={2.5} y={2.26}>outer layer to an inner one</text>
+        <text x={3.9} y={2.26}>inner layers only, hidden</text>
       </g>
-      <g fontFamily="var(--font-mono)" fontSize={9.5} fill="var(--ink-3)" letterSpacing={1}>
-        <text x={x1 + 4} y={layers[0] + 3}>L1</text>
-        <text x={x1 + 4} y={layers[1] + 3}>L2</text>
-        <text x={x1 + 4} y={layers[2] + 3}>L3</text>
-        <text x={x1 + 4} y={layers[3] + 3}>L4</text>
+      <g {...lab} fontSize={0.095} fill="var(--ink-3)">
+        {L.map((y, i) => (
+          <text key={i} x={x1 + 0.08} y={y + 0.035}>
+            L{i + 1}
+          </text>
+        ))}
       </g>
     </svg>
   )
@@ -277,7 +301,7 @@ function Article() {
         Vias aren't only for single signals. When both layers have a ground copper area, designers sprinkle extra
         ground vias across the board to tie the two together. These <strong>stitching vias</strong> give current a short
         path between layers and stop either side becoming an isolated island. You'll meet them properly with copper pours
-        in Lesson 12.
+        in the next lesson.
       </p>
 
       <Callout kind="easyeda" title="Flip the board to check the bottom">

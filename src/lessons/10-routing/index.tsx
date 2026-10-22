@@ -126,7 +126,7 @@ function Article() {
         the job of a wire, so it has to be wide enough for its current and far enough from its neighbours.
       </p>
 
-      <Figure label="Fig 1" caption="Blinky fully routed. Power (VCC and GND) runs in 0.5 mm tracks and signals in 0.25 mm. One VCC connection hops to the bottom layer (blue) through two vias; that's Lesson 11." bg="eda">
+      <Figure label="Fig 1" caption="Blinky fully routed. Power (VCC and GND) runs in 0.5 mm tracks and signals in 0.25 mm. One VCC connection hops to the bottom layer (blue) through two vias, which is the next lesson, Two layers & vias." bg="eda">
         <RoutedBlinky />
       </Figure>
 
