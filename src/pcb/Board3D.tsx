@@ -1,19 +1,19 @@
-import { Suspense, useMemo, useRef, useState } from 'react'
-import { Canvas, useFrame } from '@react-three/fiber'
-import { OrbitControls, ContactShadows, RoundedBox } from '@react-three/drei'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import { OrbitControls, AccumulativeShadows, RandomizedLight, OrthographicCamera, PerspectiveCamera } from '@react-three/drei'
+import { EffectComposer, N8AO, Bloom, SMAA } from '@react-three/postprocessing'
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
 import * as THREE from 'three'
 import { BoardView } from './render'
-import { getFootprint, type FootprintDef } from './footprints'
-import type { BoardDoc, PartInst } from './board'
-import { MASKS, REAL, type FinishColor, type MaskColor } from './palette'
-import { useSvgTexture as useBoardTexture } from './svgTexture'
+import { BumpArt, OrmArt } from './boardMaps'
+import { getFootprint } from './footprints'
+import { analyze, type BoardDoc, type PartInst } from './board'
+import { MASKS, type FinishColor, type MaskColor } from './palette'
+import { useSvgTexture } from './svgTexture'
+import { Axial, ChipPart, DipIC, GullIC, Header, Led5mm, LedChip, Sot23 } from './parts3d'
 
 const THICK = 1.6
-const PX_PER_MM = 48
-
-/* ------------------------------------------------------------------ */
-/* Texture from the photo-real SVG render                              */
-/* ------------------------------------------------------------------ */
+const EDGE_BEVEL = 0.12
 
 export function roundedRectShape(w: number, h: number, r: number) {
   const s = new THREE.Shape()
@@ -32,44 +32,96 @@ export function roundedRectShape(w: number, h: number, r: number) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Board mesh                                                          */
+/* Studio lighting: a procedural room environment (no network fetch)   */
 /* ------------------------------------------------------------------ */
 
-function BoardMesh({ doc, top, bottom, maskColor, explode = 0 }: { doc: BoardDoc; top: THREE.Texture | null; bottom: THREE.Texture | null; maskColor: MaskColor; explode?: number }) {
-  const shape = useMemo(() => roundedRectShape(doc.w, doc.h, doc.corner), [doc.w, doc.h, doc.corner])
-  const body = useMemo(() => {
-    const g = new THREE.ExtrudeGeometry(shape, { depth: THICK, bevelEnabled: false, curveSegments: 12 })
-    g.rotateX(-Math.PI / 2)
-    return g
-  }, [shape])
-  const face = useMemo(() => {
-    const g = new THREE.ShapeGeometry(shape, 12)
-    return g
-  }, [shape])
-  const configure = (t: THREE.Texture | null, flipX = false) => {
+function StudioEnvironment({ intensity = 0.9 }: { intensity?: number }) {
+  const { gl, scene } = useThree()
+  useEffect(() => {
+    const pmrem = new THREE.PMREMGenerator(gl)
+    const room = new RoomEnvironment()
+    const env = pmrem.fromScene(room, 0.035).texture
+    scene.environment = env
+    scene.environmentIntensity = intensity
+    return () => {
+      scene.environment = null
+      env.dispose()
+      pmrem.dispose()
+    }
+  }, [gl, scene, intensity])
+  return null
+}
+
+/* ------------------------------------------------------------------ */
+/* Board mesh with physically based surface maps                       */
+/* ------------------------------------------------------------------ */
+
+interface SideMaps {
+  color: THREE.Texture | null
+  bump: THREE.Texture | null
+  orm: THREE.Texture | null
+}
+
+function useConfigured(t: THREE.Texture | null, w: number, h: number, flip: boolean) {
+  return useMemo(() => {
     if (!t) return null
     t.wrapS = t.wrapT = THREE.ClampToEdgeWrapping
-    t.repeat.set((flipX ? -1 : 1) / doc.w, (flipX ? -1 : 1) / doc.h)
+    t.repeat.set((flip ? -1 : 1) / w, (flip ? -1 : 1) / h)
     t.offset.set(0.5, 0.5)
     t.needsUpdate = true
     return t
-  }
-  const topTex = useMemo(() => configure(top), [top, doc.w, doc.h]) // eslint-disable-line react-hooks/exhaustive-deps
-  const botTex = useMemo(() => configure(bottom, true), [bottom, doc.w, doc.h]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [t, w, h, flip])
+}
+
+function BoardFace({ doc, maps, bottom, maskColor }: { doc: BoardDoc; maps: SideMaps; bottom: boolean; maskColor: MaskColor }) {
+  const geo = useMemo(() => new THREE.ShapeGeometry(roundedRectShape(doc.w - 0.02, doc.h - 0.02, doc.corner), 16), [doc.w, doc.h, doc.corner])
+  const color = useConfigured(maps.color, doc.w, doc.h, bottom)
+  const bump = useConfigured(maps.bump, doc.w, doc.h, bottom)
+  const orm = useConfigured(maps.orm, doc.w, doc.h, bottom)
   const m = MASKS[maskColor]
+  return (
+    <mesh geometry={geo} rotation={[bottom ? Math.PI / 2 : -Math.PI / 2, 0, 0]} position={[0, bottom ? -0.004 : THICK + 0.004, 0]} receiveShadow>
+      <meshPhysicalMaterial
+        key={`${!!color}-${!!bump}-${!!orm}`}
+        map={color ?? undefined}
+        color={color ? '#ffffff' : m.mask}
+        bumpMap={bump ?? undefined}
+        bumpScale={2.2}
+        roughnessMap={orm ?? undefined}
+        metalnessMap={orm ?? undefined}
+        roughness={orm ? 1 : 0.45}
+        metalness={orm ? 1 : 0}
+        clearcoat={0.4}
+        clearcoatRoughness={0.25}
+      />
+    </mesh>
+  )
+}
+
+function BoardMesh({ doc, top, bottom, maskColor }: { doc: BoardDoc; top: SideMaps; bottom: SideMaps; maskColor: MaskColor }) {
+  const body = useMemo(() => {
+    const g = new THREE.ExtrudeGeometry(roundedRectShape(doc.w - EDGE_BEVEL * 2, doc.h - EDGE_BEVEL * 2, Math.max(0.05, doc.corner - EDGE_BEVEL)), {
+      depth: THICK - EDGE_BEVEL * 2,
+      bevelEnabled: true,
+      bevelSize: EDGE_BEVEL,
+      bevelThickness: EDGE_BEVEL,
+      bevelSegments: 3,
+      curveSegments: 16,
+    })
+    g.rotateX(-Math.PI / 2)
+    g.translate(0, EDGE_BEVEL, 0)
+    return g
+  }, [doc.w, doc.h, doc.corner])
+  const m = MASKS[maskColor]
+  // the edge shows the FR-4 core tinted by the mask on both faces
+  const edgeColor = useMemo(() => new THREE.Color(m.mask).lerp(new THREE.Color('#ddd3a8'), 0.55).getStyle(), [m.mask])
   return (
     <group>
       <mesh geometry={body} castShadow receiveShadow>
-        <meshStandardMaterial color={REAL.fr4Dark} roughness={0.8} />
+        <meshStandardMaterial color={edgeColor} roughness={0.7} />
       </mesh>
-      {/* top face */}
-      <mesh geometry={face} rotation={[-Math.PI / 2, 0, 0]} position={[0, THICK + 0.005 + explode, 0]} receiveShadow>
-        {topTex ? <meshStandardMaterial map={topTex} roughness={0.45} metalness={0.05} /> : <meshStandardMaterial color={m.mask} />}
-      </mesh>
-      {/* bottom face */}
-      <mesh geometry={face} rotation={[Math.PI / 2, 0, 0]} position={[0, -0.005 - explode, 0]}>
-        {botTex ? <meshStandardMaterial map={botTex} roughness={0.45} /> : <meshStandardMaterial color={m.mask} />}
-      </mesh>
+      <BoardFace doc={doc} maps={top} bottom={false} maskColor={maskColor} />
+      <BoardFace doc={doc} maps={bottom} bottom maskColor={maskColor} />
     </group>
   )
 }
@@ -78,230 +130,37 @@ function BoardMesh({ doc, top, bottom, maskColor, explode = 0 }: { doc: BoardDoc
 /* Components                                                          */
 /* ------------------------------------------------------------------ */
 
-const metal = { color: '#cfd3d8', metalness: 0.85, roughness: 0.3 }
-const gold = { color: '#e0b24a', metalness: 0.9, roughness: 0.25 }
-const plastic = { color: '#1d1d20', roughness: 0.55, metalness: 0.05 }
-
-function ChipBody({ fp, isCap }: { fp: FootprintDef; isCap: boolean }) {
-  const { w, h, height } = fp.body
-  const end = Math.min(w * 0.22, 0.6)
-  return (
-    <group>
-      <mesh position={[0, height / 2, 0]} castShadow>
-        <boxGeometry args={[w - end * 2 + 0.02, height, h]} />
-        <meshStandardMaterial color={isCap ? '#b89a6a' : '#1c1c1e'} roughness={0.6} />
-      </mesh>
-      {[-1, 1].map((s) => (
-        <mesh key={s} position={[s * (w / 2 - end / 2), height / 2, 0]} castShadow>
-          <boxGeometry args={[end, height + 0.02, h + 0.02]} />
-          <meshStandardMaterial {...metal} />
-        </mesh>
-      ))}
-    </group>
-  )
-}
-
-function LedChip({ fp, on }: { fp: FootprintDef; on: boolean }) {
-  const { w, h, height } = fp.body
-  return (
-    <group>
-      <mesh position={[0, height * 0.35, 0]} castShadow>
-        <boxGeometry args={[w, height * 0.7, h]} />
-        <meshStandardMaterial color="#f2efe6" roughness={0.5} />
-      </mesh>
-      <mesh position={[0, height * 0.82, 0]}>
-        <boxGeometry args={[w - 0.6, height * 0.3, h - 0.25]} />
-        <meshStandardMaterial
-          color="#ff5a46"
-          emissive="#ff2a10"
-          emissiveIntensity={on ? 3.5 : 0.05}
-          transparent
-          opacity={0.92}
-          roughness={0.2}
-        />
-      </mesh>
-      {on && <pointLight position={[0, 1.5, 0]} color="#ff3a20" intensity={4} distance={10} decay={2} />}
-      <mesh position={[-w / 2 + 0.15, height * 0.35, 0]}>
-        <boxGeometry args={[0.3, height * 0.72, h + 0.01]} />
-        <meshStandardMaterial color="#3fae6a" />
-      </mesh>
-    </group>
-  )
-}
-
-function Soic({ fp }: { fp: FootprintDef }) {
-  const { w, h, height } = fp.body
-  return (
-    <group>
-      <mesh position={[0, 0.15 + (height - 0.15) / 2, 0]} castShadow>
-        <boxGeometry args={[w, height - 0.15, h]} />
-        <meshStandardMaterial {...plastic} />
-      </mesh>
-      <mesh position={[-w / 2 + 0.6, height + 0.001, -h / 2 + 0.6]} rotation={[-Math.PI / 2, 0, 0]}>
-        <circleGeometry args={[0.28, 20]} />
-        <meshStandardMaterial color="#38383c" />
-      </mesh>
-      {fp.pads.map((p) => {
-        const s = Math.sign(p.x)
-        const reach = Math.abs(p.x) - w / 2
-        return (
-          <group key={p.num} position={[s * (w / 2 + reach / 2), 0, p.y]}>
-            <mesh position={[s * (reach / 2 - 0.25), 0.08, 0]} castShadow>
-              <boxGeometry args={[0.6, 0.15, 0.4]} />
-              <meshStandardMaterial {...metal} />
-            </mesh>
-            <mesh position={[-s * 0.15, 0.45, 0]} rotation={[0, 0, s * 0.9]}>
-              <boxGeometry args={[0.15, 0.85, 0.4]} />
-              <meshStandardMaterial {...metal} />
-            </mesh>
-          </group>
-        )
-      })}
-    </group>
-  )
-}
-
-function Dip({ fp }: { fp: FootprintDef }) {
-  const { w, h, height } = fp.body
-  return (
-    <group>
-      <mesh position={[0, 0.5 + height / 2, 0]} castShadow>
-        <boxGeometry args={[w, height, h]} />
-        <meshStandardMaterial {...plastic} />
-      </mesh>
-      {fp.pads.map((p) => (
-        <mesh key={p.num} position={[p.x * 0.92, 0.6, p.y]}>
-          <boxGeometry args={[0.5, 2.6, 0.3]} />
-          <meshStandardMaterial {...metal} />
-        </mesh>
-      ))}
-    </group>
-  )
-}
-
-function Header({ fp }: { fp: FootprintDef }) {
-  const { w, h, height } = fp.body
-  return (
-    <group>
-      <RoundedBox args={[w, height, h]} radius={0.15} position={[0, height / 2, 0]} castShadow>
-        <meshStandardMaterial {...plastic} />
-      </RoundedBox>
-      {fp.pads.map((p) => (
-        <mesh key={p.num} position={[p.x, 2.2, p.y]} castShadow>
-          <boxGeometry args={[0.64, 9, 0.64]} />
-          <meshStandardMaterial {...gold} />
-        </mesh>
-      ))}
-    </group>
-  )
-}
-
-function Led5mm({ fp, on }: { fp: FootprintDef; on: boolean }) {
-  const r = fp.body.w / 2 - 0.4
-  return (
-    <group>
-      <mesh position={[0, 1 + 0.5, 0]}>
-        <cylinderGeometry args={[r + 0.4, r + 0.4, 1, 32]} />
-        <meshStandardMaterial color="#ff4a3a" emissive="#ff2010" emissiveIntensity={on ? 2 : 0.05} transparent opacity={0.85} roughness={0.15} />
-      </mesh>
-      <mesh position={[0, 2 + 2.5, 0]}>
-        <cylinderGeometry args={[r, r, 5, 32]} />
-        <meshStandardMaterial color="#ff4a3a" emissive="#ff2010" emissiveIntensity={on ? 2 : 0.05} transparent opacity={0.85} roughness={0.15} />
-      </mesh>
-      <mesh position={[0, 7, 0]}>
-        <sphereGeometry args={[r, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2]} />
-        <meshStandardMaterial color="#ff4a3a" emissive="#ff2010" emissiveIntensity={on ? 2 : 0.05} transparent opacity={0.85} roughness={0.15} />
-      </mesh>
-      {on && <pointLight position={[0, 6, 0]} color="#ff3a20" intensity={8} distance={18} decay={2} />}
-      {fp.pads.map((p) => (
-        <mesh key={p.num} position={[p.x, 0.5, p.y]}>
-          <boxGeometry args={[0.5, 1.6, 0.5]} />
-          <meshStandardMaterial {...metal} />
-        </mesh>
-      ))}
-    </group>
-  )
-}
-
-function Axial({ fp }: { fp: FootprintDef }) {
-  const { w, h } = fp.body
-  return (
-    <group>
-      <mesh position={[0, h / 2 + 0.3, 0]} rotation={[0, 0, Math.PI / 2]} castShadow>
-        <capsuleGeometry args={[h / 2, w - h, 8, 16]} />
-        <meshStandardMaterial color={fp.body.color ?? '#d9c08a'} roughness={0.6} />
-      </mesh>
-      {fp.pads.map((p) => (
-        <mesh key={p.num} position={[p.x, h / 2, 0]}>
-          <boxGeometry args={[0.5, h + 0.6, 0.5]} />
-          <meshStandardMaterial {...metal} />
-        </mesh>
-      ))}
-    </group>
-  )
-}
-
-function Sot23({ fp }: { fp: FootprintDef }) {
-  const { w, h, height } = fp.body
-  return (
-    <group>
-      <mesh position={[0, 0.1 + height / 2, 0]} castShadow>
-        <boxGeometry args={[w, height, h]} />
-        <meshStandardMaterial {...plastic} />
-      </mesh>
-      {fp.pads.map((p) => (
-        <mesh key={p.num} position={[p.x, 0.1, p.y * 0.85]}>
-          <boxGeometry args={[0.4, 0.15, 0.7]} />
-          <meshStandardMaterial {...metal} />
-        </mesh>
-      ))}
-    </group>
-  )
-}
-
 export function Part3D({ part, ledOn }: { part: PartInst; ledOn: boolean }) {
   const fp = getFootprint(part.fp)
-  const k = fp.body.kind
-  const isCap = fp.body.color !== undefined
-  let el: React.ReactNode
-  switch (k) {
+  switch (fp.body.kind) {
     case 'chip':
-      el = <ChipBody fp={fp} isCap={isCap} />
-      break
+      return <ChipPart fp={fp} value={part.value} isCap={fp.body.color !== undefined} />
     case 'led-chip':
-      el = <LedChip fp={fp} on={ledOn} />
-      break
+      return <LedChip fp={fp} on={ledOn} />
     case 'soic':
-      el = <Soic fp={fp} />
-      break
+      return <GullIC fp={fp} value={part.value} />
     case 'dip':
-      el = <Dip fp={fp} />
-      break
+      return <DipIC fp={fp} value={part.value} />
     case 'header':
-      el = <Header fp={fp} />
-      break
+      return <Header fp={fp} />
     case 'led-5mm':
-      el = <Led5mm fp={fp} on={ledOn} />
-      break
+      return <Led5mm fp={fp} on={ledOn} />
     case 'axial':
-      el = <Axial fp={fp} />
-      break
+      return <Axial fp={fp} value={part.value} />
     case 'sot23':
-      el = <Sot23 fp={fp} />
-      break
+      return <Sot23 fp={fp} />
     default:
-      el = null
+      return null
   }
-  return el
 }
 
-function Parts({ doc, w, h, lift, blink }: { doc: BoardDoc; w: number; h: number; lift: number; blink: boolean }) {
+function Parts({ doc, lift, blink }: { doc: BoardDoc; lift: number; blink: boolean }) {
   const [on, setOn] = useState(true)
   const acc = useRef(0)
   useFrame((_, dt) => {
     if (!blink) return
     acc.current += dt
-    // ~1.5 Hz, 50% duty — same as the real Blinky circuit
+    // ~1.5 Hz, 50 % duty — the same rate as the real Blinky circuit
     const next = acc.current % 0.66 < 0.33
     if (next !== on) setOn(next)
   })
@@ -312,7 +171,7 @@ function Parts({ doc, w, h, lift, blink }: { doc: BoardDoc; w: number; h: number
         return (
           <group
             key={p.ref}
-            position={[p.x - w / 2, bottom ? -lift : THICK + lift, p.y - h / 2]}
+            position={[p.x - doc.w / 2, bottom ? -lift : THICK + lift, p.y - doc.h / 2]}
             rotation={[bottom ? Math.PI : 0, (-p.rot * Math.PI) / 180, 0]}
           >
             <Part3D part={p} ledOn={!blink || on} />
@@ -320,6 +179,20 @@ function Parts({ doc, w, h, lift, blink }: { doc: BoardDoc; w: number; h: number
         )
       })}
     </group>
+  )
+}
+
+/* ------------------------------------------------------------------ */
+/* Camera helpers                                                      */
+/* ------------------------------------------------------------------ */
+
+function FitOrtho({ span, dir }: { span: number; dir: [number, number, number] }) {
+  const { size } = useThree()
+  const zoom = Math.min(size.width, size.height) / (span * 1.22)
+  const d = span * 3
+  const len = Math.hypot(...dir)
+  return (
+    <OrthographicCamera makeDefault zoom={zoom} near={-500} far={1000} position={[(dir[0] / len) * d, (dir[1] / len) * d, (dir[2] / len) * d]} />
   )
 }
 
@@ -338,45 +211,135 @@ export interface Board3DProps {
   blink?: boolean
   /** initial camera direction */
   view?: 'iso' | 'top' | 'bottom'
+  /** 'ortho' gives the flat isometric "illustration" look */
+  camera?: 'persp' | 'ortho'
+  /** 'high' adds ambient occlusion and bloom; automatically lowered on small screens */
+  quality?: 'high' | 'low'
+  /** soft shadow on an invisible ground plane */
+  shadow?: boolean
   style?: React.CSSProperties
 }
 
-export function Board3D({ doc, maskColor = 'green', finish = 'hasl', showParts = true, explode = 0, autoRotate = false, blink = true, view = 'iso', style }: Board3DProps) {
-  const [topSvg, setTopSvg] = useState<SVGSVGElement | null>(null)
-  const [botSvg, setBotSvg] = useState<SVGSVGElement | null>(null)
+function isLowPower() {
+  if (typeof window === 'undefined') return false
+  const nav = navigator as Navigator & { deviceMemory?: number }
+  return window.innerWidth < 700 || (nav.deviceMemory !== undefined && nav.deviceMemory < 4)
+}
+
+export function Board3D({
+  doc,
+  maskColor = 'green',
+  finish = 'hasl',
+  showParts = true,
+  explode = 0,
+  autoRotate = false,
+  blink = true,
+  view = 'iso',
+  camera = 'persp',
+  quality = 'high',
+  shadow = true,
+  style,
+}: Board3DProps) {
+  const [svgs, setSvgs] = useState<Record<string, SVGSVGElement | null>>({})
+  const reg = (k: string) => (el: SVGSVGElement | null) => {
+    if (el) setSvgs((s) => (s[k] === el ? s : { ...s, [k]: el }))
+  }
+  const conn = useMemo(() => analyze(doc), [doc])
   const key = useMemo(() => JSON.stringify([doc.parts, doc.tracks, doc.vias, doc.pours, doc.texts, maskColor, finish]), [doc, maskColor, finish])
-  const topTex = useBoardTexture(topSvg, key)
-  const botTex = useBoardTexture(botSvg, key)
+  const top: SideMaps = {
+    color: useSvgTexture(svgs.topColor ?? null, key),
+    bump: useSvgTexture(svgs.topBump ?? null, key, { linear: true }),
+    orm: useSvgTexture(svgs.topOrm ?? null, key, { linear: true }),
+  }
+  const bottom: SideMaps = {
+    color: useSvgTexture(svgs.botColor ?? null, key),
+    bump: useSvgTexture(svgs.botBump ?? null, key, { linear: true }),
+    orm: useSvgTexture(svgs.botOrm ?? null, key, { linear: true }),
+  }
+  const low = quality === 'low' || isLowPower()
   const span = Math.max(doc.w, doc.h)
-  const cam: [number, number, number] =
-    view === 'top' ? [0, span * 2.2, 0.01] : view === 'bottom' ? [0, -span * 2.2, 0.01] : [span * 0.8, span * 1.25, span * 1.45]
-  const pxW = Math.round(doc.w * PX_PER_MM)
-  const pxH = Math.round(doc.h * PX_PER_MM)
-  const hidden: React.CSSProperties = { position: 'absolute', left: -100000, top: 0, width: pxW, height: pxH * 2, pointerEvents: 'none', overflow: 'hidden' }
-  const vis = { ratsnest: false, bodies: false }
+  const dir: [number, number, number] = view === 'top' ? [0, 1, 0.0001] : view === 'bottom' ? [0, -1, 0.0001] : [0.62, 0.95, 1.05]
+  const camPos: [number, number, number] = [dir[0] * span * 1.35, dir[1] * span * 1.35, dir[2] * span * 1.35]
+
+  const hi = low ? 40 : 64 // px per mm for the top colour map
+  const mid = low ? 24 : 36
+  const art = (k: string, ppm: number, node: React.ReactNode) => (
+    <svg ref={reg(k)} xmlns="http://www.w3.org/2000/svg" width={Math.round(doc.w * ppm)} height={Math.round(doc.h * ppm)} viewBox={`0 0 ${doc.w} ${doc.h}`}>
+      {node}
+    </svg>
+  )
+  const vis = { ratsnest: false, bodies: false, sheen: false }
+
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%', ...style }}>
-      <div style={hidden} aria-hidden>
-        <svg ref={setTopSvg} xmlns="http://www.w3.org/2000/svg" width={pxW} height={pxH} viewBox={`0 0 ${doc.w} ${doc.h}`}>
-          <BoardView doc={doc} mode="real" side="top" maskColor={maskColor} finish={finish} vis={vis} />
-        </svg>
-        <svg ref={setBotSvg} xmlns="http://www.w3.org/2000/svg" width={pxW} height={pxH} viewBox={`0 0 ${doc.w} ${doc.h}`}>
-          <BoardView doc={doc} mode="real" side="bottom" maskColor={maskColor} finish={finish} vis={vis} />
-        </svg>
+      <div aria-hidden style={{ position: 'absolute', left: -100000, top: 0, width: 10, height: 10, overflow: 'hidden', pointerEvents: 'none' }}>
+        {art('topColor', hi, <BoardView doc={doc} conn={conn} mode="real" side="top" maskColor={maskColor} finish={finish} vis={vis} />)}
+        {art('topBump', mid, <BumpArt doc={doc} conn={conn} side="top" />)}
+        {art('topOrm', mid, <OrmArt doc={doc} conn={conn} side="top" />)}
+        {art('botColor', mid, <BoardView doc={doc} conn={conn} mode="real" side="bottom" maskColor={maskColor} finish={finish} vis={vis} />)}
+        {art('botBump', 16, <BumpArt doc={doc} conn={conn} side="bottom" />)}
+        {art('botOrm', 16, <OrmArt doc={doc} conn={conn} side="bottom" />)}
       </div>
-      <Canvas shadows dpr={[1, 2]} camera={{ position: cam, fov: 35, near: 0.5, far: 1000 }} gl={{ antialias: true, alpha: true }}>
-        <ambientLight intensity={0.55} />
-        <hemisphereLight args={['#fff6e8', '#3a3326', 0.6]} />
-        <directionalLight position={[span, span * 2, span * 0.8]} intensity={1.6} castShadow shadow-mapSize={[2048, 2048]} />
-        <directionalLight position={[-span, span, -span]} intensity={0.35} />
+      <Canvas
+        shadows
+        dpr={[1, low ? 1.5 : 2]}
+        gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
+        onCreated={({ gl }) => {
+          gl.toneMapping = THREE.NeutralToneMapping
+          gl.toneMappingExposure = 0.92
+        }}
+      >
+        {camera === 'ortho' ? <FitOrtho span={span} dir={dir} /> : <PerspectiveCamera makeDefault position={camPos} fov={32} near={0.5} far={1000} />}
+        <StudioEnvironment intensity={0.42} />
+        <ambientLight intensity={0.12} />
+        <directionalLight
+          position={[span * 1.3, span * 1.15, span * 0.35]}
+          intensity={2.6}
+          color="#fff3e2"
+          castShadow
+          shadow-mapSize={[2048, 2048]}
+          shadow-bias={-0.0004}
+          shadow-normalBias={0.02}
+          shadow-camera-left={-span}
+          shadow-camera-right={span}
+          shadow-camera-top={span}
+          shadow-camera-bottom={-span}
+          shadow-camera-near={0.5}
+          shadow-camera-far={span * 5}
+        />
+        <directionalLight position={[-span, span * 0.6, -span * 0.4]} intensity={0.35} color="#ffe9d0" />
+
         <Suspense fallback={null}>
           <group>
-            <BoardMesh doc={doc} top={topTex} bottom={botTex} maskColor={maskColor} />
-            {showParts && <Parts doc={doc} w={doc.w} h={doc.h} lift={explode} blink={blink} />}
+            <BoardMesh doc={doc} top={top} bottom={bottom} maskColor={maskColor} />
+            {showParts && <Parts doc={doc} lift={explode} blink={blink} />}
           </group>
-          <ContactShadows position={[0, -0.8, 0]} opacity={0.35} scale={span * 3} blur={2.4} far={10} />
+          {shadow && (
+            <AccumulativeShadows
+              key={key}
+              position={[0, -3, 0]}
+              frames={low ? 40 : 90}
+              temporal
+              alphaTest={0.75}
+              opacity={0.6}
+              scale={span * 3}
+              color="#3a2c18"
+              colorBlend={1.5}
+            >
+              <RandomizedLight amount={6} radius={span * 0.45} ambient={0.55} intensity={1.1} position={[span * 0.5, span * 2, span * 0.6]} bias={0.0005} />
+            </AccumulativeShadows>
+          )}
         </Suspense>
-        <OrbitControls makeDefault autoRotate={autoRotate} autoRotateSpeed={0.8} enableDamping minDistance={span * 0.5} maxDistance={span * 4} />
+
+        <OrbitControls makeDefault autoRotate={autoRotate} autoRotateSpeed={0.7} enableDamping minDistance={span * 0.6} maxDistance={span * 4} minZoom={2} maxZoom={200} />
+
+        {!low && (
+          <EffectComposer multisampling={0} enableNormalPass={false}>
+            <N8AO halfRes aoRadius={1.6} distanceFalloff={0.6} intensity={2.4} quality="medium" color="#1a120a" />
+            <Bloom mipmapBlur luminanceThreshold={1} luminanceSmoothing={0.2} intensity={1.1} />
+            <SMAA />
+          </EffectComposer>
+        )}
       </Canvas>
     </div>
   )

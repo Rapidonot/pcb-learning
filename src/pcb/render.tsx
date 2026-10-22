@@ -26,6 +26,8 @@ export interface LayerVis {
   pours: boolean
   bodies: boolean
   refs: boolean
+  /** subtle lighting gradient over real-mode boards (off for 3D textures) */
+  sheen: boolean
 }
 
 export const allLayers: LayerVis = {
@@ -37,6 +39,7 @@ export const allLayers: LayerVis = {
   pours: true,
   bodies: false,
   refs: true,
+  sheen: true,
 }
 
 const ptsStr = (pts: Vec[]) => pts.map((p) => `${p[0]},${p[1]}`).join(' ')
@@ -181,18 +184,68 @@ export function FootprintSilk({ def, color }: { def: FootprintDef; color: string
 /* ------------------------------------------------------------------ */
 
 export function PartBodyTop({ fp, value }: { fp: FootprintDef; value?: string }) {
+  const uid = cleanId(useId())
   const { w, h, kind, color } = fp.body
+  const id = (n: string) => `${n}-${uid}`
+  const url = (n: string) => `url(#${id(n)})`
+  const defs = (
+    <defs>
+      <linearGradient id={id('metal')} x1="0" y1="0" x2="1" y2="0">
+        <stop offset="0" stopColor="#f6f8fa" />
+        <stop offset="0.35" stopColor="#c3c8ce" />
+        <stop offset="0.62" stopColor="#eef1f4" />
+        <stop offset="1" stopColor="#8f969e" />
+      </linearGradient>
+      <linearGradient id={id('metalV')} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stopColor="#f6f8fa" />
+        <stop offset="0.45" stopColor="#b9bec5" />
+        <stop offset="1" stopColor="#e3e6ea" />
+      </linearGradient>
+      <linearGradient id={id('plastic')} x1="0" y1="0" x2="0.4" y2="1">
+        <stop offset="0" stopColor="#3a3a40" />
+        <stop offset="0.18" stopColor="#26262b" />
+        <stop offset="1" stopColor="#141417" />
+      </linearGradient>
+      <linearGradient id={id('ceramic')} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stopColor="#d2ad7c" />
+        <stop offset="1" stopColor="#9c7a50" />
+      </linearGradient>
+      <linearGradient id={id('gold')} x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stopColor="#fff0b8" />
+        <stop offset="0.45" stopColor="#e6b347" />
+        <stop offset="1" stopColor="#a8741c" />
+      </linearGradient>
+      <radialGradient id={id('lens')} cx="0.38" cy="0.35" r="0.75">
+        <stop offset="0" stopColor="#ffd2c8" />
+        <stop offset="0.35" stopColor="#ff6a55" />
+        <stop offset="1" stopColor="#b8241a" />
+      </radialGradient>
+      <filter id={id('sh')} x="-30%" y="-30%" width="160%" height="160%">
+        <feDropShadow dx="0.1" dy="0.16" stdDeviation="0.1" floodColor="#000" floodOpacity="0.45" />
+      </filter>
+    </defs>
+  )
+  const solder = (x: number, y: number, ww: number, hh: number, key?: string | number) => (
+    <rect key={key} x={x} y={y} width={ww} height={hh} rx={Math.min(ww, hh) * 0.45} fill={url('metalV')} opacity={0.95} />
+  )
   switch (kind) {
     case 'chip': {
       const isCap = color !== undefined
       const end = Math.min(w * 0.22, 0.6)
       return (
         <g>
-          <rect x={-w / 2} y={-h / 2} width={w} height={h} rx={0.08} fill={isCap ? '#b89a6a' : '#1d1d1f'} />
-          <rect x={-w / 2} y={-h / 2} width={end} height={h} rx={0.06} fill="#c9ccd1" />
-          <rect x={w / 2 - end} y={-h / 2} width={end} height={h} rx={0.06} fill="#c9ccd1" />
+          {defs}
+          {/* solder fillets spreading onto the pads */}
+          {fp.pads.map((p, i) => solder(p.x - p.w / 2, p.y - p.h / 2 + 0.05, p.w, p.h - 0.1, i))}
+          <g filter={url('sh')}>
+            <rect x={-w / 2} y={-h / 2} width={w} height={h} rx={0.1} fill={isCap ? url('ceramic') : '#e9e6de'} />
+            {!isCap && <rect x={-w / 2 + end} y={-h / 2 + 0.05} width={w - end * 2} height={h - 0.1} fill={url('plastic')} />}
+            <rect x={-w / 2} y={-h / 2} width={end} height={h} rx={0.08} fill={url('metal')} />
+            <rect x={w / 2 - end} y={-h / 2} width={end} height={h} rx={0.08} fill={url('metal')} />
+            <rect x={-w / 2 + 0.04} y={-h / 2 + 0.04} width={w - 0.08} height={0.08} rx={0.04} fill="#fff" opacity={0.25} />
+          </g>
           {!isCap && (
-            <text x={0} y={0.02} fontSize={h * 0.5} textAnchor="middle" dominantBaseline="central" fill="#e8e8e8" fontFamily="IBM Plex Mono, monospace">
+            <text x={0} y={0.03} fontSize={h * 0.46} textAnchor="middle" dominantBaseline="central" fill="#e9e9e9" fontFamily="IBM Plex Mono, monospace" fontWeight={500}>
               {resistorCode(value)}
             </text>
           )}
@@ -202,32 +255,65 @@ export function PartBodyTop({ fp, value }: { fp: FootprintDef; value?: string })
     case 'led-chip':
       return (
         <g>
-          <rect x={-w / 2} y={-h / 2} width={w} height={h} rx={0.1} fill="#f2efe6" />
-          <rect x={-w / 2 + 0.35} y={-h / 2 + 0.15} width={w - 0.7} height={h - 0.3} rx={0.2} fill="#ff6b5a" opacity={0.85} />
-          <rect x={-w / 2} y={-h / 2} width={0.3} height={h} fill="#3fae6a" />
+          {defs}
+          {fp.pads.map((p, i) => solder(p.x - p.w / 2, p.y - p.h / 2 + 0.05, p.w, p.h - 0.1, i))}
+          <g filter={url('sh')}>
+            <rect x={-w / 2} y={-h / 2} width={w} height={h} rx={0.12} fill="#f4f1e9" />
+            <rect x={-w / 2} y={-h / 2} width={0.42} height={h} rx={0.08} fill={url('metal')} />
+            <rect x={w / 2 - 0.42} y={-h / 2} width={0.42} height={h} rx={0.08} fill={url('metal')} />
+          </g>
+          <rect x={-w / 2 + 0.5} y={-h / 2 + 0.14} width={w - 1} height={h - 0.28} rx={0.22} fill={url('lens')} />
+          <rect x={-0.18} y={-0.18} width={0.36} height={0.36} rx={0.04} fill="#ffe8d8" opacity={0.9} />
+          <rect x={-w / 2 + 0.46} y={-h / 2 + 0.1} width={0.12} height={h - 0.2} fill="#3fae6a" />
+          <ellipse cx={-0.25} cy={-0.28} rx={0.3} ry={0.12} fill="#fff" opacity={0.5} />
         </g>
       )
     case 'soic': {
-      const legs = fp.pads.map((p) => (
-        <rect key={p.num} x={p.x - 0.55} y={p.y - 0.2} width={1.1} height={0.4} rx={0.05} fill="#c9ccd1" />
-      ))
       return (
         <g>
-          {legs}
-          <rect x={-w / 2} y={-h / 2} width={w} height={h} rx={0.15} fill="#222225" />
-          <circle cx={-w / 2 + 0.6} cy={-h / 2 + 0.6} r={0.28} fill="#3a3a3e" />
-          <text x={0} y={-0.3} fontSize={0.62} textAnchor="middle" dominantBaseline="central" fill="#bdbdbd" fontFamily="IBM Plex Mono, monospace" transform="rotate(90)">
-            {value ?? ''}
-          </text>
+          {defs}
+          {fp.pads.map((p) => {
+            const s = Math.sign(p.x)
+            const x0 = s > 0 ? w / 2 - 0.05 : p.x - 0.62
+            const len = Math.abs(p.x) + 0.62 - w / 2 + 0.05
+            return (
+              <g key={p.num}>
+                {solder(p.x - 0.72, p.y - 0.27, 1.44, 0.54)}
+                <rect x={x0} y={p.y - 0.2} width={len} height={0.4} rx={0.06} fill={url('metal')} />
+                <rect x={s > 0 ? w / 2 + 0.2 : -w / 2 - 0.35} y={p.y - 0.2} width={0.15} height={0.4} fill="#7d838a" opacity={0.7} />
+              </g>
+            )
+          })}
+          <g filter={url('sh')}>
+            <rect x={-w / 2} y={-h / 2} width={w} height={h} rx={0.16} fill={url('plastic')} />
+            <rect x={-w / 2 + 0.12} y={-h / 2 + 0.12} width={w - 0.24} height={h - 0.24} rx={0.1} fill="none" stroke="#fff" strokeOpacity={0.08} strokeWidth={0.06} />
+          </g>
+          <circle cx={-w / 2 + 0.62} cy={-h / 2 + 0.62} r={0.27} fill="#121214" />
+          <circle cx={-w / 2 + 0.58} cy={-h / 2 + 0.58} r={0.27} fill="none" stroke="#000" strokeOpacity={0.5} strokeWidth={0.05} />
+          <g transform="rotate(90)" fontFamily="IBM Plex Mono, monospace" textAnchor="middle" fill="#c4c4c4">
+            <text x={0} y={-0.35} fontSize={0.62} fontWeight={600} dominantBaseline="central">
+              {value ?? ''}
+            </text>
+            <text x={0} y={0.45} fontSize={0.38} dominantBaseline="central" fill="#9a9a9a">
+              TI 26A G4
+            </text>
+          </g>
         </g>
       )
     }
     case 'dip':
       return (
         <g>
-          <rect x={-w / 2} y={-h / 2} width={w} height={h} rx={0.3} fill="#222225" />
-          <path d={`M -0.9 ${-h / 2} a 0.9 0.9 0 0 0 1.8 0`} fill="#141416" />
-          <text x={0} y={0} fontSize={0.9} textAnchor="middle" dominantBaseline="central" fill="#bdbdbd" fontFamily="IBM Plex Mono, monospace" transform="rotate(90)">
+          {defs}
+          {fp.pads.map((p) => (
+            <rect key={p.num} x={p.x - Math.sign(p.x) * 0.9 - 0.35} y={p.y - 0.65} width={0.7} height={1.3} rx={0.08} fill={url('metal')} />
+          ))}
+          <g filter={url('sh')}>
+            <rect x={-w / 2} y={-h / 2} width={w} height={h} rx={0.35} fill={url('plastic')} />
+          </g>
+          <path d={`M -0.9 ${-h / 2} a 0.9 0.9 0 0 0 1.8 0`} fill="#0f0f11" />
+          <circle cx={-w / 2 + 0.9} cy={-h / 2 + 1.6} r={0.35} fill="#121214" />
+          <text x={0} y={0} fontSize={0.9} textAnchor="middle" dominantBaseline="central" fill="#c4c4c4" fontFamily="IBM Plex Mono, monospace" fontWeight={600} transform="rotate(90)">
             {value ?? ''}
           </text>
         </g>
@@ -235,11 +321,18 @@ export function PartBodyTop({ fp, value }: { fp: FootprintDef; value?: string })
     case 'header':
       return (
         <g>
-          <rect x={-w / 2} y={-h / 2} width={w} height={h} rx={0.15} fill="#202022" />
+          {defs}
           {fp.pads.map((p) => (
-            <g key={p.num}>
-              <line x1={-w / 2} y1={p.y + 1.27} x2={w / 2} y2={p.y + 1.27} stroke="#333" strokeWidth={0.08} />
-              <rect x={p.x - 0.32} y={p.y - 0.32} width={0.64} height={0.64} fill="#e2b44e" />
+            <g key={p.num} filter={url('sh')}>
+              <rect x={p.x - w / 2 + 0.03} y={p.y - 1.24} width={w - 0.06} height={2.48} rx={0.28} fill={url('plastic')} />
+            </g>
+          ))}
+          {fp.pads.map((p) => (
+            <g key={`pin${p.num}`} transform={`translate(${p.x} ${p.y})`}>
+              <rect x={-0.34} y={-0.34} width={0.68} height={0.68} fill={url('gold')} />
+              <path d="M -0.34 -0.34 L 0 0 L 0.34 -0.34 Z" fill="#fff4cc" opacity={0.65} />
+              <path d="M -0.34 0.34 L 0 0 L 0.34 0.34 Z" fill="#8a5e14" opacity={0.55} />
+              <path d="M 0.34 -0.34 L 0 0 L 0.34 0.34 Z" fill="#b07d22" opacity={0.45} />
             </g>
           ))}
         </g>
@@ -247,29 +340,42 @@ export function PartBodyTop({ fp, value }: { fp: FootprintDef; value?: string })
     case 'led-5mm':
       return (
         <g>
-          <circle r={w / 2} fill={color ?? '#e8392f'} opacity={0.9} />
-          <circle r={w / 2 - 0.4} fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth={0.2} />
-          <ellipse cx={-0.8} cy={-0.9} rx={0.8} ry={0.5} fill="rgba(255,255,255,0.45)" />
-          <line x1={-w / 2 + 0.3} y1={-1.8} x2={-w / 2 + 0.3} y2={1.8} stroke="rgba(0,0,0,0.3)" strokeWidth={0.25} />
+          {defs}
+          <g filter={url('sh')}>
+            <circle r={w / 2} fill={url('lens')} />
+          </g>
+          <path d={`M ${-w / 2 + 0.25} -1.9 A ${w / 2} ${w / 2} 0 1 0 ${-w / 2 + 0.25} 1.9 Z`} fill="none" stroke="#000" strokeOpacity={0.15} strokeWidth={0.2} />
+          <circle r={w / 2 - 0.45} fill="none" stroke="#fff" strokeOpacity={0.3} strokeWidth={0.18} />
+          <ellipse cx={-0.85} cy={-0.95} rx={0.85} ry={0.5} fill="#fff" opacity={0.55} transform="rotate(-35 -0.85 -0.95)" />
         </g>
       )
-    case 'axial':
+    case 'axial': {
+      const bands = ['#7a4a1e', '#111', '#7a4a1e', '#c9a23a']
       return (
         <g>
-          <line x1={-5.08} y1={0} x2={5.08} y2={0} stroke="#c9ccd1" strokeWidth={0.5} strokeLinecap="round" />
-          <rect x={-w / 2} y={-h / 2} width={w} height={h} rx={h / 2} fill={color ?? '#d9c08a'} />
-          {['#8b4a1c', '#111', '#8b4a1c', '#d4a52c'].map((c, i) => (
-            <rect key={i} x={-2 + i * 1.1 + (i === 3 ? 0.6 : 0)} y={-h / 2} width={0.45} height={h} fill={c} />
+          {defs}
+          <line x1={-5.08} y1={0} x2={5.08} y2={0} stroke={url('metalV')} strokeWidth={0.5} strokeLinecap="round" />
+          <line x1={-5.08} y1={-0.1} x2={5.08} y2={-0.1} stroke="#fff" strokeOpacity={0.5} strokeWidth={0.1} />
+          <g filter={url('sh')}>
+            <rect x={-w / 2} y={-h / 2} width={w} height={h} rx={h / 2} fill={color ?? '#d9c08a'} />
+          </g>
+          {bands.map((c, i) => (
+            <rect key={i} x={-2 + i * 1.1 + (i === 3 ? 0.6 : 0)} y={-h / 2 + 0.05} width={0.45} height={h - 0.1} fill={c} />
           ))}
+          <rect x={-w / 2 + 0.3} y={-h / 2 + 0.2} width={w - 0.6} height={0.35} rx={0.17} fill="#fff" opacity={0.3} />
         </g>
       )
+    }
     case 'sot23':
       return (
         <g>
+          {defs}
           {fp.pads.map((p) => (
-            <rect key={p.num} x={p.x - 0.22} y={p.y - 0.45} width={0.44} height={0.9} fill="#c9ccd1" />
+            <rect key={p.num} x={p.x - 0.2} y={p.y - 0.45} width={0.4} height={0.9} rx={0.05} fill={url('metal')} />
           ))}
-          <rect x={-w / 2} y={-h / 2} width={w} height={h} rx={0.1} fill="#222225" />
+          <g filter={url('sh')}>
+            <rect x={-w / 2} y={-h / 2} width={w} height={h} rx={0.12} fill={url('plastic')} />
+          </g>
         </g>
       )
     default:
@@ -657,6 +763,15 @@ function RealBoard({ doc, vis, conn, side = 'top', maskColor = 'green', finish =
           <stop offset="0.5" stopColor="#fff" stopOpacity={0} />
           <stop offset="1" stopColor="#000" stopOpacity={0.12} />
         </linearGradient>
+        <radialGradient id={`pad-${uid}`} cx="0.4" cy="0.35" r="0.8">
+          <stop offset="0" stopColor={finish === 'enig' ? '#fff1c2' : '#ffffff'} />
+          <stop offset="0.55" stopColor={padColor} />
+          <stop offset="1" stopColor={finish === 'enig' ? REAL.enigShade : REAL.haslShade} />
+        </radialGradient>
+        <filter id={`grain-${uid}`} x="0" y="0" width="100%" height="100%">
+          <feTurbulence type="fractalNoise" baseFrequency="2.2" numOctaves="2" seed="3" result="n" />
+          <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.09 0" />
+        </filter>
       </defs>
       {/* board edge (FR4 core shows as a thin rim) */}
       <rect x={-0.12} y={-0.12} width={doc.w + 0.24} height={doc.h + 0.24} rx={doc.corner + 0.1} fill={m.edge} />
@@ -684,7 +799,7 @@ function RealBoard({ doc, vis, conn, side = 'top', maskColor = 'green', finish =
         {layerPads.map((p) => (
           <g key={p.key} transform={`translate(${p.x} ${p.y}) rotate(${p.rot})`}>
             <PadGlyph pad={p} fill={m.mask} hole={null} inflate={0.05} />
-            <PadGlyph pad={p} fill={padColor} hole={REAL.hole} />
+            <PadGlyph pad={p} fill={vis.sheen ? `url(#pad-${uid})` : padColor} hole={REAL.hole} />
           </g>
         ))}
         {doc.vias.map((v) => (
@@ -712,7 +827,8 @@ function RealBoard({ doc, vis, conn, side = 'top', maskColor = 'green', finish =
               ))}
           </g>
         )}
-        <rect x={0} y={0} width={doc.w} height={doc.h} fill={`url(#${gradId})`} style={{ pointerEvents: 'none' }} />
+        {vis.sheen && <rect x={0} y={0} width={doc.w} height={doc.h} filter={`url(#grain-${uid})`} style={{ pointerEvents: 'none' }} />}
+        {vis.sheen && <rect x={0} y={0} width={doc.w} height={doc.h} fill={`url(#${gradId})`} style={{ pointerEvents: 'none' }} />}
       </g>
       {/* assembled parts */}
       {vis.bodies &&

@@ -5,7 +5,7 @@ import * as THREE from 'three'
  * Rasterise a live <svg> element into a THREE texture. Re-renders whenever `key` changes.
  * The svg must not carry positioning styles itself (wrap it in a hidden div instead).
  */
-export function useSvgTexture(svg: SVGSVGElement | null, key: string) {
+export function useSvgTexture(svg: SVGSVGElement | null, key: string, opts: { linear?: boolean } = {}) {
   const [tex, setTex] = useState<THREE.Texture | null>(null)
   useEffect(() => {
     if (!svg) return
@@ -21,7 +21,7 @@ export function useSvgTexture(svg: SVGSVGElement | null, key: string) {
       const ctx = c.getContext('2d')!
       ctx.drawImage(img, 0, 0)
       const t = new THREE.CanvasTexture(c)
-      t.colorSpace = THREE.SRGBColorSpace
+      t.colorSpace = opts.linear ? THREE.NoColorSpace : THREE.SRGBColorSpace
       t.anisotropy = 8
       setTex((old) => {
         old?.dispose()

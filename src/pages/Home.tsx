@@ -64,7 +64,7 @@ export default function Home() {
         <div className="hero__visual anim-in" style={{ animationDelay: '120ms' }}>
           <div className="hero__board">
             <Suspense fallback={<HeroFallback />}>
-              <Board3D doc={finished} autoRotate blink />
+              <Board3D doc={finished} autoRotate blink camera="ortho" />
             </Suspense>
             <div className="hero__tag hero__tag--a mono">
               <span className="dot" /> NE555 timer

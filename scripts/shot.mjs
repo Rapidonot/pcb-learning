@@ -7,7 +7,7 @@ const waitFlag = flags.find((f) => f.startsWith('--wait='))
 const scrollFlag = flags.find((f) => f.startsWith('--scroll='))
 const wait = waitFlag ? +waitFlag.split('=')[1] : 1500
 const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium', args: ['--use-gl=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist'] }).catch(async () => chromium.launch())
-const page = await browser.newPage({ viewport: { width: +w, height: +h }, deviceScaleFactor: 1, colorScheme: dark ? 'dark' : 'light' })
+const page = await browser.newPage({ viewport: { width: +w, height: +h }, deviceScaleFactor: +(process.env.DPR || 1), colorScheme: dark ? 'dark' : 'light' })
 const errors = []
 page.on('pageerror', (e) => errors.push('pageerror: ' + e.message))
 page.on('console', (m) => { if (m.type() === 'error' || m.type() === 'warning') errors.push(m.type() + ': ' + m.text()) })
