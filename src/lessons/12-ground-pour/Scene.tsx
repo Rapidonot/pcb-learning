@@ -310,9 +310,11 @@ export function Scene() {
       <Button size="sm" variant="ghost" className={stale ? 'l12-hot' : ''} onClick={rebuild} disabled={!pour} aria-label="Rebuild copper (Shift+B)">
         <IconReset size={15} /> {!narrow && 'Rebuild'}
       </Button>
-      <Button size="sm" variant="ghost" onClick={() => setShowPour((s) => !s)} aria-label="Show or hide copper regions (Shift+M)">
-        {showPour ? <IconEye size={15} /> : <IconEyeOff size={15} />}
-      </Button>
+      {!narrow && (
+        <Button size="sm" variant="ghost" onClick={() => setShowPour((s) => !s)} aria-label="Show or hide copper regions (Shift+M)">
+          {showPour ? <IconEye size={15} /> : <IconEyeOff size={15} />}
+        </Button>
+      )}
       <span className="scene-toolbar__sep" />
       <Button size="sm" variant="ghost" active={deleted} onClick={toggleDeleted} aria-label={deleted ? 'Restore the GND tracks' : 'Delete the GND tracks'}>
         {deleted ? <IconUndo size={15} /> : <IconTrash size={15} />} {narrow ? 'GND' : deleted ? 'Restore GND tracks' : 'Delete GND tracks'}
