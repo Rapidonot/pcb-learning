@@ -374,7 +374,13 @@ export function Editor() {
     (ref: string) => {
       setSel([{ kind: 'part', id: ref }])
       const p = store.get().parts.find((q) => q.ref === ref)
-      if (p && view === 'eda') canvasRef.current?.centerOn([p.x, p.y])
+      const c = canvasRef.current
+      if (!p || view !== 'eda' || !c?.svg) return
+      // keep the part clear of the schematic drawer, which covers the left of the canvas
+      const w = c.svg.clientWidth
+      const drawer = w > 760 ? Math.min(520, 0.62 * w) : 0
+      const mmPerPx = (c.toWorld(100, 0)[0] - c.toWorld(0, 0)[0]) / 100
+      c.centerOn([p.x - (drawer / 2) * mmPerPx, p.y])
     },
     [store, view],
   )
@@ -766,7 +772,8 @@ export function Editor() {
       case 'KeyX':
         if (e.shiftKey) {
           setSchOpen(true)
-          if (!selectedRefs.length) toast({ kind: 'info', title: 'Cross-probe', body: 'Select a part on the PCB (or click a symbol in the schematic) to find it on the other side.' }, 3000)
+          if (selectedRefs.length) crossProbe(selectedRefs[0])
+          else toast({ kind: 'info', title: 'Cross-probe', body: 'Select a part on the PCB (or click a symbol in the schematic) to find it on the other side.' }, 3000)
         }
         break
       case 'Space':
@@ -874,7 +881,7 @@ export function Editor() {
 
       <ToolRail tool={tool} setTool={setTool} activeLayer={activeLayer} setActiveLayer={setActiveLayer} disabled={view !== 'eda'} hasSel={sel.length > 0} rotate={rotateSelection} del={deleteSelection} undo={store.undo} redo={store.redo} canUndo={store.canUndo} canRedo={store.canRedo} />
 
-      <main className={`sbx-canvas sbx-canvas--${view}`}>
+      <main className={`sbx-canvas sbx-canvas--${view} ${schOpen ? 'has-sch' : ''}`}>
         {view !== '3d' && (
           <EditorCanvas
             ref={canvasRef}
@@ -999,7 +1006,11 @@ export function Editor() {
           onClose={() => setSchOpen(false)}
           selectedRefs={selectedRefs}
           highlightNet={highlightNet}
-          onSymbol={crossProbe}
+          onSymbol={(ref) => {
+            // on phones the drawer covers the board: close it so the found part is visible
+            if (window.innerWidth <= 760) setSchOpen(false)
+            crossProbe(ref)
+          }}
           onNet={(n) => setHighlightNet((cur) => (cur === n ? null : n))}
         />
       </main>

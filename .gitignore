@@ -7,3 +7,4 @@ dist
 # throwaway per-lesson test scripts
 scripts/dev/l[0-9]*
 scripts/dev/sandbox-*
+*.tmp.*

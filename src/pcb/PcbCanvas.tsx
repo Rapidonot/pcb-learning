@@ -47,6 +47,8 @@ export interface PcbCanvasProps {
   onPointerDown?: (e: React.PointerEvent<SVGSVGElement>, world: Vec) => void
   onPointerMove?: (e: React.PointerEvent<SVGSVGElement>, world: Vec) => void
   onPointerUp?: (e: React.PointerEvent<SVGSVGElement>, world: Vec) => void
+  /** a press-and-release on empty canvas that didn't pan (e.g. to deselect) */
+  onBackgroundClick?: (e: React.PointerEvent<SVGSVGElement>, world: Vec) => void
   onContextMenu?: (e: React.MouseEvent<SVGSVGElement>) => void
   cursor?: string
   /** padding around the fit rect, in mm */
@@ -80,6 +82,7 @@ export const PcbCanvas = forwardRef<PcbCanvasHandle, PcbCanvasProps>(function Pc
     onPointerDown,
     onPointerMove,
     onPointerUp,
+    onBackgroundClick,
     onContextMenu,
     cursor,
     pad = 2,
@@ -174,7 +177,7 @@ export const PcbCanvas = forwardRef<PcbCanvasHandle, PcbCanvasProps>(function Pc
 
   // panning & pinch
   const pointers = useRef(new Map<number, { x: number; y: number }>())
-  const panState = useRef<{ x: number; y: number; vb: ViewBox } | null>(null)
+  const panState = useRef<{ x: number; y: number; vb: ViewBox; bg: boolean; moved: boolean } | null>(null)
   const pinch = useRef<{ d: number } | null>(null)
 
   const handleDown = (e: React.PointerEvent<SVGSVGElement>) => {
@@ -189,7 +192,7 @@ export const PcbCanvas = forwardRef<PcbCanvasHandle, PcbCanvasProps>(function Pc
     const isBg = e.target === svgRef.current || (e.target as Element).getAttribute?.('data-bg') === '1'
     const wantsPan = interactive && (e.button === 1 || e.button === 2 || (isBg && e.button === 0 && !onPointerDown) || (e.button === 0 && e.altKey))
     if (wantsPan) {
-      panState.current = { x: e.clientX, y: e.clientY, vb: view }
+      panState.current = { x: e.clientX, y: e.clientY, vb: view, bg: isBg && e.button === 0, moved: false }
       svgRef.current?.setPointerCapture(e.pointerId)
       return
     }
@@ -209,6 +212,8 @@ export const PcbCanvas = forwardRef<PcbCanvasHandle, PcbCanvasProps>(function Pc
       const svg = svgRef.current!
       const r = svg.getBoundingClientRect()
       const p = panState.current
+      if (Math.hypot(e.clientX - p.x, e.clientY - p.y) > 4) p.moved = true
+      if (!p.moved) return
       const dx = ((e.clientX - p.x) / r.width) * p.vb.w
       const dy = ((e.clientY - p.y) / r.height) * p.vb.h
       setVb({ ...p.vb, x: p.vb.x - dx, y: p.vb.y - dy })
@@ -221,7 +226,9 @@ export const PcbCanvas = forwardRef<PcbCanvasHandle, PcbCanvasProps>(function Pc
     pointers.current.delete(e.pointerId)
     if (pointers.current.size < 2) pinch.current = null
     if (panState.current) {
+      const p = panState.current
       panState.current = null
+      if (p.bg && !p.moved) onBackgroundClick?.(e, toWorld(e.clientX, e.clientY))
       return
     }
     onPointerUp?.(e, toWorld(e.clientX, e.clientY))

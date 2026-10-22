@@ -1,4 +1,4 @@
-import { useId, useState, type ButtonHTMLAttributes, type CSSProperties, type ReactNode } from 'react'
+import React, { useId, useState, type ButtonHTMLAttributes, type CSSProperties, type ReactNode } from 'react'
 import './ui.css'
 
 /* ------------------------------------------------------------------ */
@@ -6,6 +6,7 @@ import './ui.css'
 /* ------------------------------------------------------------------ */
 
 type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+  ref?: React.Ref<HTMLButtonElement>
   variant?: 'default' | 'primary' | 'accent' | 'ghost'
   size?: 'sm' | 'md' | 'lg'
   icon?: boolean

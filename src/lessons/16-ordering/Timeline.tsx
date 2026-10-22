@@ -2,7 +2,6 @@ import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { Button } from '@/components/ui'
 import { IconChevronLeft, IconChevronRight, IconPause, IconPlay, IconX } from '@/components/icons'
 import { stages } from '@/pcb/project'
-import { BoardView } from '@/pcb/render'
 import type { FinishColor } from '@/pcb/palette'
 import { Bubbles, Clipboard, DrillBit, IsoBoard, Iron, Probe, ShippingBox, type Stage } from './art'
 import { FINISHES, MASK_NAMES, type Order } from './options'
@@ -174,10 +173,6 @@ export function Timeline({ order, onClose, onDone }: { order: Order; onClose: ()
           </Button>
         )}
       </div>
-      {/* invisible prefetch of the finished render so the last steps don't pop */}
-      <svg width={0} height={0} style={{ position: 'absolute' }} aria-hidden>
-        <BoardView doc={doc} mode="real" vis={{ bodies: true }} maskColor={order.mask} finish={finish} />
-      </svg>
     </div>
   )
 }

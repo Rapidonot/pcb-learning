@@ -400,7 +400,26 @@ export function drc(doc: BoardDoc, rules: Rules = beginnerRules, conn = analyze(
 
   // shorts
   for (const s of conn.shorts) {
-    const first = s.items.find((x) => !x.startsWith('pad:')) ?? s.items[0]
+    // point at the copper that directly bridges the most different nets (usually the offending track)
+    const padNet = new Map(pads.map((p) => [`pad:${p.key}`, p.net]))
+    const island = items.filter((x) => s.items.includes(x.id))
+    let first = s.items.find((x) => !x.startsWith('pad:')) ?? s.items[0]
+    let bestNets = 0
+    for (const it of island) {
+      if (it.kind === 'pad') continue
+      const touched = new Set<string>()
+      for (const other of island) {
+        if (other.kind !== 'pad' || !other.layers.some((l) => it.layers.includes(l))) continue
+        if (it.shapes.some((sa) => other.shapes.some((sb) => shapeDist(sa, sb) <= 0.001))) {
+          const n = padNet.get(other.id)
+          if (n) touched.add(n)
+        }
+      }
+      if (touched.size > bestNets) {
+        bestNets = touched.size
+        first = it.id
+      }
+    }
     const it = items.find((x) => x.id === first)
     errors.push({
       kind: 'short',

@@ -1,6 +1,7 @@
 import type { PointerEvent as RPointerEvent, ReactNode } from 'react'
 import { rotate, type Vec } from './geom'
 import { symbols, schNets, symPins, type SchDoc, type SymInst, type WorldPin } from './schematic'
+import { netlist as projectNetlist } from './project'
 
 export const SCH = {
   symbol: '#8a1c1c',
@@ -183,6 +184,8 @@ export interface SchematicViewProps {
   pinHitRadius?: number
   /** pins that should show a pulsing "connect me" hint */
   hintPins?: string[]
+  /** names nets that have no label/flag (pin key → net); defaults to the Blinky netlist */
+  netlist?: Record<string, string>
   children?: ReactNode
 }
 
@@ -199,10 +202,16 @@ export function SchematicView({
   onPinEnter,
   pinHitRadius = 5,
   hintPins = [],
+  netlist = projectNetlist,
   children,
 }: SchematicViewProps) {
   const nets = schNets(doc)
-  const pinNet = nets.netName
+  // name every connected group: a label/flag name wins, otherwise the netlist name of any pin in it
+  const pinNet = new Map(nets.netName)
+  for (const g of nets.groups) {
+    const name = g.map((k) => nets.netName.get(k)).find(Boolean) ?? g.map((k) => netlist[k]).find(Boolean)
+    if (name) for (const k of g) pinNet.set(k, name)
+  }
   // which wires belong to highlighted net: approximate by checking wire touching a pin of that net
   return (
     <g>

@@ -669,6 +669,18 @@
   background: #3f6fe0;
 }
 
+/* while the schematic drawer is open, keep the HUD in the visible part of the canvas */
+.sbx-canvas.has-sch .sbx-ctx {
+  left: auto;
+  right: 12px;
+  transform: none;
+  animation: none;
+}
+.sbx-canvas.has-sch .sbx-hint,
+.sbx-canvas.has-sch .sbx-coach {
+  display: none;
+}
+
 /* tool hint */
 .sbx-hint {
   position: absolute;
