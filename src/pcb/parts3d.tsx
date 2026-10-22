@@ -283,7 +283,7 @@ export function GullIC({ fp, value, small }: { fp: FootprintDef; value?: string;
             <circleGeometry args={[0.26, 24]} />
           </mesh>
           {value && (
-            <Decal tex={labelTexture([value, 'TI 26A', 'G4'], h * 0.8, w * 0.62)} w={h * 0.8} h={w * 0.62} y={standoff + bodyH + 0.003} rot={Math.PI / 2} />
+            <Decal tex={labelTexture([value, '2610', 'A'], h * 0.8, w * 0.62)} w={h * 0.8} h={w * 0.62} y={standoff + bodyH + 0.003} rot={Math.PI / 2} />
           )}
         </>
       )}

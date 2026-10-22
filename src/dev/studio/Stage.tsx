@@ -57,13 +57,13 @@ interface Framed {
 /** Precise camera-space extents of everything in `root` (skips objects flagged userData.noFit). */
 function fitExtents(root: THREE.Object3D, cam: THREE.Camera) {
   const inv = cam.matrixWorldInverse
-  const m = new THREE.Matrix4()
   const v = new THREE.Vector3()
   let x0 = Infinity
   let x1 = -Infinity
   let y0 = Infinity
   let y1 = -Infinity
   const box = new THREE.Box3()
+  const pts: number[] = []
   root.updateWorldMatrix(true, true)
   const visit = (o: THREE.Object3D) => {
     if (!o.visible || o.userData.noFit) return
@@ -71,22 +71,31 @@ function fitExtents(root: THREE.Object3D, cam: THREE.Camera) {
     if (mesh.isMesh && mesh.geometry) {
       const pos = mesh.geometry.getAttribute('position')
       if (pos) {
-        m.multiplyMatrices(inv, mesh.matrixWorld)
-        const step = Math.max(1, Math.floor(pos.count / 4000))
-        for (let i = 0; i < pos.count; i += step) {
+        for (let i = 0; i < pos.count; i++) {
           v.fromBufferAttribute(pos, i).applyMatrix4(mesh.matrixWorld)
           box.expandByPoint(v)
-          v.fromBufferAttribute(pos, i).applyMatrix4(m)
-          if (v.x < x0) x0 = v.x
-          if (v.x > x1) x1 = v.x
-          if (v.y < y0) y0 = v.y
-          if (v.y > y1) y1 = v.y
+          pts.push(v.x, v.y, v.z)
         }
       }
     }
     o.children.forEach(visit)
   }
   visit(root)
+  const floor = box.min.y
+  const add = (x: number, y: number, z: number) => {
+    v.set(x, y, z).applyMatrix4(inv)
+    if (v.x < x0) x0 = v.x
+    if (v.x > x1) x1 = v.x
+    if (v.y < y0) y0 = v.y
+    if (v.y > y1) y1 = v.y
+  }
+  for (let i = 0; i < pts.length; i += 3) {
+    const [x, y, z] = [pts[i], pts[i + 1], pts[i + 2]]
+    add(x, y, z)
+    // where its soft floor shadow lands (light mostly overhead, a little from the left/front)
+    const h = (y - floor) * 0.35
+    if (h > 0.01) add(x + h, floor, z - h)
+  }
   return { x0, x1, y0, y1, box }
 }
 

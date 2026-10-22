@@ -118,6 +118,9 @@
 .float-card {
   position: absolute;
   z-index: 5;
+  max-height: calc(100% - 24px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
   width: 248px;
   max-width: calc(100% - 24px);
   background: color-mix(in srgb, var(--card) 94%, transparent);

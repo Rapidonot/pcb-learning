@@ -136,14 +136,15 @@ export function CeramicDisc({ label = '104', color = '#e08a2c' }: { label?: stri
     g.scale(R, R * 1.02, 0.95)
     return g
   }, [])
-  const tex = canvasTex(`disc:${label}`, 256, 256, (ctx, w, h) => {
+  const tex = canvasTex(`disc:${label}`, 768, 256, (ctx, w, h) => {
     ctx.fillStyle = color
     ctx.fillRect(0, 0, w, h)
+    // sphere UVs: the +z face (towards the viewer) sits around u = 0.25
     ctx.fillStyle = 'rgba(40,20,5,0.85)'
-    ctx.font = `600 ${w * 0.17}px "IBM Plex Mono", monospace`
+    ctx.font = `600 ${h * 0.2}px "IBM Plex Mono", monospace`
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
-    ctx.fillText(label, w / 2, h * 0.47)
+    ctx.fillText(label, w * 0.25, h * 0.5)
   })
   return (
     <group>

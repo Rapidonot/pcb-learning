@@ -929,7 +929,8 @@ export function Scene() {
     if (phase === 'inspect') return { text: tool === 'loupe' ? 'Move the magnifier over the joints. Look for dull joints and solder bridges.' : tool === 'wick' ? 'Press the wick onto a bridge to soak the solder up.' : 'Click a dull joint to reflow it.' }
     if (phase === 'test') return { text: shortOk ? 'Short check passed.' : 'Dial to Ω or •))), then drag the red and black probes onto +5V and GND.' }
     if (sup.on && E.cc) return { text: 'CC is lit: the supply is limiting the current. Something is shorted. Switch off!', tone: 'bad' as const }
-    if (sup.on && !blinked && !(H.oscillates && H.ledPath)) return { text: 'Powered, but the LED stays dark. Measure, don’t guess: work through the checklist.', tone: 'warn' as const }
+    if (sup.on && !blinked && !(H.oscillates && H.ledPath))
+      return { text: `Powered, but the LED stays dark. Measure, don’t guess: work through the checklist${L.mobile ? ' in the Workbench card' : ''}.`, tone: 'warn' as const }
     return { text: blinked ? 'Blinky is blinking at about 1.5 Hz.' : 'Set 5.0 V and a low current limit, then press OUTPUT.' }
   })()
 
@@ -1174,7 +1175,14 @@ export function Scene() {
         style={L.mobile ? { left: 8, right: 8, top: 52 } : { left: L.board.x + 8, width: L.board.w - 16, top: L.board.y + 2 }}
         role="status"
       >
-        <span key={coach.text}>{coach.text}</span>
+        <span key={coach.text}>
+          {coach.text}
+          {L.mobile && phase === 'power' && blinked && !fault && !msg && (
+            <button className="l17-coach__btn" onClick={() => setShow3d(true)}>
+              See it in 3D
+            </button>
+          )}
+        </span>
       </div>
 
       {/* LED orientation / turn-around dialogs */}

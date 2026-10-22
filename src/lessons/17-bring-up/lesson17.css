@@ -732,3 +732,20 @@
     padding: 10px;
   }
 }
+.l17-coach__btn {
+  pointer-events: auto;
+  margin-left: 8px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 650;
+  background: #f6f2e8;
+  color: #1d1c1a;
+}
+
+/* keep the workbench card inside the stage; long checklists scroll */
+.l17-scene .float-card {
+  max-height: calc(100% - 84px);
+  overflow: auto;
+  scrollbar-width: thin;
+}

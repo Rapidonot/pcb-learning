@@ -16,7 +16,7 @@ import { REAL } from '@/pcb/palette'
 import type { StageProps } from './Stage'
 import { DocBoard, Slab, THICK, faceGeometry, padGeometry, ringGeometry, traceGeometry, type P2 } from './board'
 import { CeramicDisc, Electrolytic, Glow, LooseLed, LooseResistor, Paper, Pencil, Tube, Wire } from './props'
-import { Arrow, BB, Battery9V, Breadboard, Dashes, Laptop, Magnifier, MagnifiedDisc, Pen, SolderSpool, SolderingIron, Squeegee, ShipBox, bbHole } from './props2'
+import { Arrow, BB, Battery9V, Breadboard, Dashes, Laptop, Magnifier, MagnifiedDisc, Pen, SolderSpool, SolderingIron, ShipBox, bbHole } from './props2'
 import { useSvgTex } from './textures'
 import { circle, paintedMaps, polyline, roundRect } from './paint'
 import { CopperArt, DatasheetPage, DrillArt, EdaScreen, MaskOpeningsArt, PAGE, PINOUT, SHEET, SchematicSheet, SilkArt } from './art'
@@ -710,13 +710,13 @@ function Vias() {
 /* ------------------------------------------------------------------ */
 
 function GroundPour() {
-  const W = 30
-  const D = 22
+  const W = 24
+  const D = 17
   const P = (x: number, y: number): P2 => [x - W / 2, -(y - D / 2)] // board mm → shape coords
-  const thermal = P(9.5, 10)
-  const via = P(17, 16)
-  const pad = P(25.5, 16)
-  const stitches = [P(4, 4), P(15, 4), P(24, 4.5), P(4, 18), P(11, 18.5), P(19, 9.5)]
+  const thermal = P(7.5, 7.5)
+  const via = P(12.5, 12.6)
+  const pad = P(19.5, 12.6)
+  const stitches = [P(3.2, 3.2), P(12.5, 3.2), P(20.8, 3.4), P(3.2, 13.8), P(16, 7.5)]
   const geo = useMemo(() => {
     const s = new THREE.Shape()
     const r = 1.6
@@ -868,9 +868,6 @@ function Silkscreen() {
   return (
     <group>
       <Slab w={W} h={D} corner={2} maps={maps} bumpScale={3} />
-      <group position={[9, THICK, -7.5]} rotation={[0.42, -0.5, 0]}>
-        <Squeegee len={17} />
-      </group>
     </group>
   )
 }
@@ -989,18 +986,17 @@ function Gerbers() {
   /* eslint-enable react-hooks/rules-of-hooks */
   const film = useMemo(() => faceGeometry(fw, fh, 1.2), [fw, fh])
   return (
-    <group rotation={[0, 0.2, 0]}>
+    <group rotation={[0, 0.25, 0]}>
       {layers.map((l, i) => {
         // spread like a deck of cards: each film steps up, right and back, with a slight twist
-        const pivot = new THREE.Vector3(-fw / 2 + i * 7, 0, fh / 2 - i * 4.5)
         return (
-          <group key={l.key} position={[pivot.x, i * 3.2, pivot.z]} rotation={[0, -0.06 * i, 0]}>
-            <group position={[fw / 2, 0, -fh / 2]}>
-              <mesh geometry={film} rotation={[-Math.PI / 2, 0, 0]} castShadow receiveShadow>
-                <meshPhysicalMaterial color={l.color} transparent opacity={0.3} roughness={0.15} clearcoat={1} depthWrite={false} side={THREE.DoubleSide} />
+          <group key={l.key} position={[i * 5.5, i * 2.8, -i * 3.6]} rotation={[0, -0.07 * i, 0]}>
+            <group rotation={[-Math.PI / 2, 0, 0]}>
+              <mesh geometry={film} castShadow receiveShadow>
+                <meshPhysicalMaterial color={l.color} transparent opacity={0.4} roughness={0.15} clearcoat={1} depthWrite={false} side={THREE.DoubleSide} />
               </mesh>
               {texs[i] && (
-                <mesh geometry={film} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.03, 0]} castShadow>
+                <mesh geometry={film} position={[0, 0, 0.04]} castShadow>
                   <meshStandardMaterial color={l.color} emissive={l.color} emissiveIntensity={0.45} roughness={0.4} alphaMap={texs[i]} alphaTest={0.45} side={THREE.DoubleSide} />
                 </mesh>
               )}

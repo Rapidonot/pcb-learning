@@ -387,7 +387,7 @@ function Dip8() {
             NE555P
           </Mono>
           <Mono size={2.4} y={2} fill="#9a9a9a" weight={500}>
-            TI 26A G4
+            2610 A
           </Mono>
         </g>
       </g>

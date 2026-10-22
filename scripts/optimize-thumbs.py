@@ -15,6 +15,10 @@ def optimise(src: str, dst: str) -> int:
     im = Image.open(src).convert("RGBA")
     # resize in premultiplied space so transparent edges don't pick up dark fringes
     im = im.convert("RGBa").resize((W, H), Image.LANCZOS).convert("RGBA")
+    # drop the near-invisible haze the shadow catcher leaves across the frame
+    r, g, b, a = im.split()
+    a = a.point(lambda v: 0 if v < 6 else v)
+    im = Image.merge("RGBA", (r, g, b, a))
     for q in (90, 86, 82, 78, 72):
         im.save(dst, "WEBP", quality=q, method=6, alpha_quality=100, exact=False)
         size = os.path.getsize(dst)

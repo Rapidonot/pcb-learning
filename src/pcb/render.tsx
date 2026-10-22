@@ -296,7 +296,7 @@ export function PartBodyTop({ fp, value }: { fp: FootprintDef; value?: string })
               {value ?? ''}
             </text>
             <text x={0} y={0.45} fontSize={0.38} dominantBaseline="central" fill="#9a9a9a">
-              TI 26A G4
+              2610 A
             </text>
           </g>
         </g>
