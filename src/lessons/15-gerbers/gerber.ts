@@ -278,6 +278,7 @@ function gerberText(id: FileId, title: string, prims: Prim[], doc: BoardDoc): GL
   push(`%LPD*%`, 'polarity', 'Load polarity Dark: what follows adds material.')
 
   let cur = -1
+  let pos = ''
   let dark = true
   let lastLabel = ''
   prims.forEach((p, i) => {
@@ -306,17 +307,20 @@ function gerberText(id: FileId, title: string, prims: Prim[], doc: BoardDoc): GL
     if (p.kind === 'flash') {
       push(`${xy(p.at)}D03*`, 'flash', `D03 = flash: stamp the aperture once at ${mm(p.at)}. ${p.label}.`, i)
     } else if (p.kind === 'path') {
-      p.pts.forEach((q, j) =>
-        push(`${xy(q)}${j === 0 ? 'D02' : 'D01'}*`, j === 0 ? 'move' : 'draw', j === 0 ? `D02 = move with the pen up to ${mm(q)}. ${p.label}.` : `D01 = draw a line with the pen down to ${mm(q)}.`, i),
-      )
+      p.pts.forEach((q, j) => {
+        if (j === 0 && xy(q) === pos) return
+        push(`${xy(q)}${j === 0 ? 'D02' : 'D01'}*`, j === 0 ? 'move' : 'draw', j === 0 ? `D02 = move with the pen up to ${mm(q)}. ${p.label}.` : `D01 = draw a line with the pen down to ${mm(q)}.`, i)
+        pos = xy(q)
+      })
     } else if (p.kind === 'arc') {
-      push(`${xy(p.a)}D02*`, 'move', `Move to ${mm(p.a)}, the start of a rounded corner.`, i)
+      if (xy(p.a) !== pos) push(`${xy(p.a)}D02*`, 'move', `Move to ${mm(p.a)}, the start of a rounded corner.`, i)
       push(`G03*`, 'mode', 'G03: counter-clockwise arcs from here.', i)
       const I = p.c[0] - p.a[0]
       const J = -(p.c[1] - p.a[1])
       push(`${xy(p.b)}I${X(I)}J${X(J)}D01*`, 'arc', `Draw an arc to ${mm(p.b)}. I and J give the centre relative to the start.`, i)
       push(`G01*`, 'mode', 'Back to straight lines.', i)
-    }
+      pos = xy(p.b)
+    } else pos = ''
   })
   if (!prims.length) push(`G04 This layer is empty on this board*`, 'comment', 'Nothing on this layer, but the file is still exported so the set is complete.')
   push(`M02*`, 'end', 'M02: end of file.')
@@ -334,8 +338,8 @@ function drillText(prims: Prim[], doc: BoardDoc): GLine[] {
   push('; Plated through holes (PTH)', 'comment', 'These holes get copper-plated walls.')
   push('METRIC,LZ', 'unit', 'Units are millimetres.')
   sizes.forEach((d, i) => push(`T${String(i + 1).padStart(2, '0')}C${n3(d)}`, 'tool', `Tool T${String(i + 1).padStart(2, '0')}: a ${n3(d)} mm drill bit.`))
-  push('%', 'header', 'End of header.')
   push('G90', 'mode', 'G90: absolute coordinates.')
+  push('%', 'header', 'End of header.')
   push('G05', 'mode', 'G05: drill mode (as opposed to routing).')
   sizes.forEach((d, i) => {
     const t = `T${String(i + 1).padStart(2, '0')}`

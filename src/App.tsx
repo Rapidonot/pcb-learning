@@ -7,6 +7,8 @@ import LessonPage from '@/pages/LessonPage'
 const Sandbox = lazy(() => import('@/pages/Sandbox'))
 const Shortcuts = lazy(() => import('@/pages/Shortcuts'))
 const Glossary = lazy(() => import('@/pages/Glossary'))
+// dev-only thumbnail studio (see scripts/render-thumbs.mjs); compiled out of production builds
+const ThumbStudio = import.meta.env.DEV ? lazy(() => import('@/dev/ThumbStudio')) : null
 
 function PageFallback() {
   return (
@@ -17,6 +19,13 @@ function PageFallback() {
 }
 
 export default function App() {
+  if (ThumbStudio && window.location.pathname === '/__studio') {
+    return (
+      <Suspense fallback={null}>
+        <ThumbStudio />
+      </Suspense>
+    )
+  }
   return (
     <Shell>
       <Suspense fallback={<PageFallback />}>

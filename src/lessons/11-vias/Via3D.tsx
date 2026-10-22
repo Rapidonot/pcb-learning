@@ -1,8 +1,9 @@
 /* A 3D cut-away of a single via: half of the board is sliced off so you can look into the plated barrel. */
-import { useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import * as THREE from 'three'
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
 
 const U = 10 // scene units per mm
 const CORE = 1.6 * U
@@ -38,7 +39,75 @@ function halfRingGeo(rIn: number, rOut: number, h: number) {
   return g
 }
 
-const copperMat = { color: '#e0924a', metalness: 0.35, roughness: 0.4 } as const
+const copperMat = { color: '#e39a58', metalness: 0.92, roughness: 0.26 } as const
+
+/** A procedural studio environment so metals have something to reflect (no network fetch). */
+function Studio() {
+  const { gl, scene } = useThree()
+  useEffect(() => {
+    const pm = new THREE.PMREMGenerator(gl)
+    const env = pm.fromScene(new RoomEnvironment(), 0.04).texture
+    scene.environment = env
+    scene.environmentIntensity = 0.85
+    return () => {
+      scene.environment = null
+      env.dispose()
+      pm.dispose()
+    }
+  }, [gl, scene])
+  return null
+}
+
+/** Glass-fibre weave in epoxy, drawn on a canvas and tiled over the FR-4. */
+function useWeaveTexture() {
+  return useMemo(() => {
+    const c = document.createElement('canvas')
+    c.width = 288
+    c.height = 160
+    const g = c.getContext('2d')!
+    g.fillStyle = '#c4ad75'
+    g.fillRect(0, 0, c.width, c.height)
+    // warp bundle weaving over/under
+    const warp = g.createLinearGradient(0, 50, 0, 120)
+    warp.addColorStop(0, '#efe2bb')
+    warp.addColorStop(1, '#b9a26b')
+    g.fillStyle = warp
+    g.beginPath()
+    g.moveTo(-10, 56)
+    g.bezierCurveTo(50, 56, 90, 104, 144, 104)
+    g.bezierCurveTo(198, 104, 238, 56, 298, 56)
+    g.lineTo(298, 80)
+    g.bezierCurveTo(238, 80, 198, 128, 144, 128)
+    g.bezierCurveTo(90, 128, 50, 80, -10, 80)
+    g.closePath()
+    g.fill()
+    // weft bundles end-on
+    for (const cx of [48, 240]) {
+      const rg = g.createRadialGradient(cx - 12, 70, 4, cx, 80, 46)
+      rg.addColorStop(0, '#fbf3dc')
+      rg.addColorStop(0.6, '#e2d1a2')
+      rg.addColorStop(1, '#b09a63')
+      g.fillStyle = rg
+      g.beginPath()
+      g.ellipse(cx, 80, 44, 21, 0, 0, Math.PI * 2)
+      g.fill()
+      g.strokeStyle = 'rgba(120,100,60,0.5)'
+      g.lineWidth = 2
+      g.stroke()
+    }
+    // speckle
+    for (let i = 0; i < 260; i++) {
+      g.fillStyle = `rgba(${90 + Math.random() * 60},${70 + Math.random() * 40},30,${0.06 + Math.random() * 0.08})`
+      g.fillRect(Math.random() * c.width, Math.random() * c.height, 2, 2)
+    }
+    const t = new THREE.CanvasTexture(c)
+    t.colorSpace = THREE.SRGBColorSpace
+    t.wrapS = t.wrapT = THREE.RepeatWrapping
+    t.repeat.set(1 / 3.6, 1 / 2)
+    t.anisotropy = 8
+    return t
+  }, [])
+}
 
 function Flow({ path, on }: { path: THREE.Vector3[]; on: boolean }) {
   const refs = useRef<(THREE.Mesh | null)[]>([])
@@ -104,6 +173,7 @@ function ViaModel({ d, drill, explode, flow, labelPts }: { d: number; drill: num
   const topY = CORE + gap
   const botY = -CU - gap
   const block = useMemo(() => halfBlockGeo(holeR), [holeR])
+  const weave = useWeaveTexture()
   const ring = useMemo(() => halfRingGeo(rIn, rOut, CU), [rIn, rOut])
   const barrel = useMemo(() => halfRingGeo(rIn, holeR, 1), [rIn, holeR])
   const barrelH = topY + CU - botY
@@ -128,7 +198,7 @@ function ViaModel({ d, drill, explode, flow, labelPts }: { d: number; drill: num
     <group position={[0, oy, 0]}>
       {/* FR-4 */}
       <mesh geometry={block} position={[0, 0, -slide]}>
-        <meshStandardMaterial color="#cbb781" roughness={0.85} transparent opacity={1 - explode * 0.55} />
+        <meshStandardMaterial map={weave} color="#ffffff" roughness={0.7} transparent opacity={1 - explode * 0.55} />
       </mesh>
       {/* faint full outline of the removed front half */}
       <mesh position={[0, CORE / 2, DEPTH / 2]}>
@@ -158,7 +228,7 @@ function ViaModel({ d, drill, explode, flow, labelPts }: { d: number; drill: num
       </group>
       {/* plated barrel */}
       <mesh geometry={barrel} position={[0, botY, 0]} scale={[1, barrelH, 1]}>
-        <meshStandardMaterial color="#e6a066" metalness={0.3} roughness={0.42} side={THREE.DoubleSide} />
+        <meshStandardMaterial color="#e8a466" metalness={0.9} roughness={0.3} side={THREE.DoubleSide} />
       </mesh>
 
       <Flow path={path} on={flow} />
@@ -175,7 +245,8 @@ export default function Via3D({ d, drill, explode, flow }: { d: number; drill: n
   return (
     <>
     <Canvas dpr={[1, 2]} camera={{ position: [12, 14, 46], fov: 32, near: 0.5, far: 500 }} gl={{ antialias: true, alpha: true }}>
-      <ambientLight intensity={0.55} />
+      <Studio />
+      <ambientLight intensity={0.25} />
       <hemisphereLight args={['#fff6e8', '#3a3326', 0.7]} />
       <directionalLight position={[20, 40, 30]} intensity={1.6} />
       <directionalLight position={[-30, -10, 20]} intensity={0.55} />

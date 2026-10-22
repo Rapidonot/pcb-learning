@@ -9,10 +9,8 @@ import { netlist } from '@/pcb/project'
 import type { Vec } from '@/pcb/geom'
 import { fitInsets, netColor, netGraph, SchDrawing, useElementSize, useUnitsPerPx, usePrefersReducedMotion } from '../06-reading-schematics/schKit'
 import {
-  cloneWires,
   describePins,
   lRoute,
-  NET_ORDER,
   netStatus,
   pick,
   pointTargets,

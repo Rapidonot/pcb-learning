@@ -131,7 +131,7 @@ export function pinDir(doc: SchDoc, key: string): Vec {
   const d: Vec = [p.x - p.bx, p.y - p.by]
   const r = (s.rot * Math.PI) / 180
   const v: Vec = [d[0] * Math.cos(r) - d[1] * Math.sin(r), d[0] * Math.sin(r) + d[1] * Math.cos(r)]
-  return [Math.round(Math.sign(v[0])), Math.round(Math.sign(v[1]))]
+  return [Math.sign(Math.round(v[0])), Math.sign(Math.round(v[1]))]
 }
 
 export const netColor = (net: string | null | undefined) => (net && netInfo[net]?.color) || SCH.hl

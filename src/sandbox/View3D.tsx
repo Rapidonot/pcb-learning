@@ -9,9 +9,10 @@ export default function View3D({ doc, maskColor, finish }: { doc: BoardDoc; mask
   const [blink, setBlink] = useState(true)
   const [cam, setCam] = useState<'iso' | 'top' | 'bottom'>('iso')
   const [mask, setMask] = useState<MaskColor>(maskColor)
+  const [proj, setProj] = useState<'persp' | 'ortho'>('persp')
   return (
     <div className="sbx-3d">
-      <Board3D key={cam} doc={doc} maskColor={mask} finish={finish} autoRotate={auto} blink={blink} view={cam} />
+      <Board3D key={`${cam}-${proj}`} doc={doc} maskColor={mask} finish={finish} autoRotate={auto} blink={blink} view={cam} camera={proj} quality="high" shadow />
       <div className="sbx-photo sbx-photo--3d" onPointerDown={(e) => e.stopPropagation()}>
         <div className="sbx-seg">
           {(['iso', 'top', 'bottom'] as const).map((v) => (
@@ -19,6 +20,14 @@ export default function View3D({ doc, maskColor, finish }: { doc: BoardDoc; mask
               {v === 'iso' ? 'Angle' : v === 'top' ? 'Top' : 'Bottom'}
             </button>
           ))}
+        </div>
+        <div className="sbx-seg">
+          <button className={proj === 'persp' ? 'is-on' : ''} onClick={() => setProj('persp')}>
+            Perspective
+          </button>
+          <button className={proj === 'ortho' ? 'is-on' : ''} onClick={() => setProj('ortho')}>
+            Isometric
+          </button>
         </div>
         <span className="sbx-photo__sep" />
         <div className="sbx-swatches" role="radiogroup" aria-label="Solder mask colour">

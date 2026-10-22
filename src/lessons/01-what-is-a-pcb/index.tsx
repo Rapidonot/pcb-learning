@@ -202,7 +202,7 @@ function Article() {
       <p>
         All of that is driven by the files you design. Your job as the designer is to describe <em>each layer</em>: where the
         copper goes, where the mask opens, what's printed and where holes are drilled. That's exactly what EasyEDA helps you
-        do, and by Lesson 15 you'll be sending those layer files to a real factory.
+        do, and by Lesson 16 you'll be sending those layer files to a real factory.
       </p>
       <Callout kind="easyeda" title="You'll meet these layers in EasyEDA">
         EasyEDA's PCB editor has a <strong>Layers</strong> panel on the right with entries like <em>Top Layer</em>,{' '}

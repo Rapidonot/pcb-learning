@@ -85,8 +85,18 @@ export const lessons: LessonMeta[] = [
     load: () => import('./06-reading-schematics'),
   },
   {
-    id: 'drawing-schematic',
+    id: 'parts-datasheets',
     num: 7,
+    chapter: 'schematic',
+    title: 'Choosing parts & reading datasheets',
+    short: 'Datasheets',
+    blurb: 'Find real parts in the library, read a datasheet like a pro, and make sure the footprint matches.',
+    minutes: 10,
+    load: () => import('./06b-parts-datasheets'),
+  },
+  {
+    id: 'drawing-schematic',
+    num: 8,
     chapter: 'schematic',
     title: 'Drawing your first schematic',
     short: 'Wiring',
@@ -96,7 +106,7 @@ export const lessons: LessonMeta[] = [
   },
   {
     id: 'schematic-to-pcb',
-    num: 8,
+    num: 9,
     chapter: 'schematic',
     title: 'From schematic to board',
     short: 'Ratsnest',
@@ -106,7 +116,7 @@ export const lessons: LessonMeta[] = [
   },
   {
     id: 'placement',
-    num: 9,
+    num: 10,
     chapter: 'layout',
     title: 'Placing parts',
     short: 'Placement',
@@ -116,7 +126,7 @@ export const lessons: LessonMeta[] = [
   },
   {
     id: 'routing',
-    num: 10,
+    num: 11,
     chapter: 'layout',
     title: 'Routing traces',
     short: 'Traces',
@@ -126,7 +136,7 @@ export const lessons: LessonMeta[] = [
   },
   {
     id: 'vias',
-    num: 11,
+    num: 12,
     chapter: 'layout',
     title: 'Two layers & vias',
     short: 'Vias',
@@ -136,7 +146,7 @@ export const lessons: LessonMeta[] = [
   },
   {
     id: 'ground-pour',
-    num: 12,
+    num: 13,
     chapter: 'layout',
     title: 'Copper pours & ground',
     short: 'Pours',
@@ -146,7 +156,7 @@ export const lessons: LessonMeta[] = [
   },
   {
     id: 'silkscreen',
-    num: 13,
+    num: 14,
     chapter: 'layout',
     title: 'Silkscreen & finishing touches',
     short: 'Silkscreen',
@@ -156,7 +166,7 @@ export const lessons: LessonMeta[] = [
   },
   {
     id: 'drc',
-    num: 14,
+    num: 15,
     chapter: 'layout',
     title: 'Design rule check',
     short: 'DRC',
@@ -166,7 +176,7 @@ export const lessons: LessonMeta[] = [
   },
   {
     id: 'gerbers',
-    num: 15,
+    num: 16,
     chapter: 'fabrication',
     title: 'Gerbers: the files factories read',
     short: 'Gerbers',
@@ -176,13 +186,23 @@ export const lessons: LessonMeta[] = [
   },
   {
     id: 'ordering',
-    num: 16,
+    num: 17,
     chapter: 'fabrication',
     title: 'Ordering your boards',
     short: 'Order',
     blurb: 'Fill in the order form with confidence, and optionally have the parts assembled for you.',
     minutes: 8,
     load: () => import('./16-ordering'),
+  },
+  {
+    id: 'bring-up',
+    num: 18,
+    chapter: 'fabrication',
+    title: 'Solder it & bring it to life',
+    short: 'Bring-up',
+    blurb: 'Your boards arrived. Solder them, test them safely, and debug if the LED stays dark.',
+    minutes: 10,
+    load: () => import('./17-bring-up'),
   },
 ]
 

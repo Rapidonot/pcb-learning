@@ -60,7 +60,7 @@ export function CompleteModal({ doc, maskColor, onClose, open3d }: { doc: BoardD
           </div>
           <div className="sbx-done__3d">
             <Suspense fallback={<div className="sbx-spinner" />}>
-              <Board3D doc={doc} maskColor={maskColor} autoRotate blink />
+              <Board3D doc={doc} maskColor={maskColor} autoRotate blink quality="high" shadow />
             </Suspense>
             <span className="sbx-done__cap mono">Your board in 3D · the LED blinks at ~1.5 Hz</span>
           </div>
